@@ -7,6 +7,7 @@ import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../transport/circles_storage.dart';
 import 'compose_screen.dart';
+import 'qr_screen.dart';
 
 class CircleScreen extends StatelessWidget {
   final Circle circle;
@@ -38,6 +39,18 @@ class CircleScreen extends StatelessWidget {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.qr_code),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QrShowScreen(
+                  circle: circle,
+                  theme: theme,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () => _showCircleInfo(context, colors),
           ),
@@ -59,7 +72,7 @@ class CircleScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(
-                'v1.4.0 — coming soon',
+                'v1.5.0 — coming soon',
                 style: GoogleFonts.vt323(fontSize: 18, color: colors.textDim),
               ),
             ],

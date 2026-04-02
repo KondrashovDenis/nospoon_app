@@ -8,6 +8,7 @@ import '../theme/crt_effects.dart';
 import '../transport/circles_storage.dart';
 import 'circle_screen.dart';
 import 'settings_screen.dart';
+import 'qr_screen.dart';
 
 class MainScreen extends StatefulWidget {
   final SpoonTheme theme;
@@ -191,6 +192,20 @@ class _MainScreenState extends State<MainScreen> {
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          FloatingActionButton(
+            heroTag: 'scan',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => QrScanScreen(theme: widget.theme),
+              ),
+            ).then((joined) {
+              if (joined == true) _loadCircles();
+            }),
+            backgroundColor: colors.dim,
+            child: Icon(Icons.qr_code_scanner, color: colors.primary),
+          ),
+          const SizedBox(height: 12),
           FloatingActionButton(
             heroTag: 'join',
             onPressed: _joinCircle,

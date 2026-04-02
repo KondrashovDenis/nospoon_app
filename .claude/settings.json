@@ -7,7 +7,12 @@
       "Read(//d/VS_projects/nospoon/**)",
       "Bash(flutter build:*)",
       "Bash(wmic logicaldisk:*)",
-      "Bash(GRADLE_USER_HOME=\"D:/android_build\" flutter build apk --debug)"
+      "Bash(GRADLE_USER_HOME=\"D:/android_build\" flutter build apk --debug)",
+      "Bash(powershell -Command 'Get-ChildItem '\\\\''C:\\\\Users\\\\denci\\\\.gradle'\\\\'' | ForEach-Object { $size = \\(Get-ChildItem $_.FullName -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum\\).Sum; [PSCustomObject]@{Name=$_.Name; '\\\\''Size\\(MB\\)'\\\\''=[math]::Round\\($size/1MB,0\\)} } | Format-Table -AutoSize')",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force 'C:\\\\Users\\\\denci\\\\.gradle\\\\caches'; Remove-Item -Recurse -Force 'C:\\\\Users\\\\denci\\\\.gradle\\\\wrapper'; Write-Host 'done'\")",
+      "Bash(mkdir /tmp/empty_dir)",
+      "Bash(powershell -Command ':*)",
+      "Bash(powershell -Command \"[System.Environment]::SetEnvironmentVariable\\('GRADLE_USER_HOME', 'D:\\\\android_build', 'User'\\); Write-Host 'done'\")"
     ],
     "additionalDirectories": [
       "d:\\VS_projects\\nospoon_app\\lib"

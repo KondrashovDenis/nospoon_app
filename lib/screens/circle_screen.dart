@@ -61,11 +61,22 @@ class _CircleScreenState extends State<CircleScreen> {
 
     try {
       final messages = await _messenger!.receive(widget.circle.key);
+      debugPrint('=== FEED LOADED ===');
+      debugPrint('circle key: ${widget.circle.key}');
+      debugPrint('messages count: ${messages.length}');
+      for (final m in messages) {
+        debugPrint('  cid: ${m.cid}');
+        debugPrint('  success: ${m.success}');
+        debugPrint('  text: ${m.text}');
+        debugPrint('  error: ${m.error}');
+      }
       setState(() {
         _messages = messages;
         _loading = false;
       });
     } catch (e) {
+      debugPrint('=== FEED ERROR ===');
+      debugPrint(e.toString());
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -246,9 +257,7 @@ class _CircleScreenState extends State<CircleScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    msg.success
-                        ? msg.text ?? 'tap to decode'
-                        : 'tap to decode',
+                    'tap to decode',
                     style: GoogleFonts.vt323(
                       color: colors.textDim,
                       fontSize: 16,

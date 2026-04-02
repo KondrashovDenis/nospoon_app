@@ -123,9 +123,22 @@ class _CeremonyScreenState extends State<CeremonyScreen>
     if (result.success) {
       _revealText(result.text);
     } else {
-      setState(() {
-        _stage = CeremonyStage.password;
-      });
+      // Проверить — может это действительно пароль нужен
+      // или просто TTL не совпал
+      if (result.error != null &&
+          result.error!.contains('пароль')) {
+        // Показать экран пароля только если TTL совпал
+        // но результат пустой (значит пароль нужен)
+        setState(() {
+          _stage = CeremonyStage.password;
+        });
+      } else {
+        // TTL истёк
+        setState(() {
+          _errorMessage = 'TTL EXPIRED';
+          _stage = CeremonyStage.error;
+        });
+      }
     }
   }
 

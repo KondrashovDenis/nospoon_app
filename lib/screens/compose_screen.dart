@@ -226,6 +226,11 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
       setState(() => _status = 'uploading to ipfs...');
 
+      debugPrint('=== SENDING ===');
+      debugPrint('text: ${_textController.text}');
+      debugPrint('circle: ${widget.circle.key}');
+      debugPrint('ttl: $_ttl');
+
       final result = await messenger.send(
         _textController.text,
         widget.circle.key,
@@ -234,6 +239,11 @@ class _ComposeScreenState extends State<ComposeScreen> {
             ? _passwordController.text
             : null,
       );
+
+      debugPrint('=== SEND RESULT ===');
+      debugPrint('cid: ${result.cid}');
+      debugPrint('expires: ${result.expiresAt}');
+      debugPrint('size: ${result.sizeBytes}');
 
       setState(() {
         _sending = false;

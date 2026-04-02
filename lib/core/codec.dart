@@ -74,14 +74,26 @@ class SpoonCodec {
       // Шаг 1: .bin → BF
       final bfCode = SpoonTranscoder.decodeFromBin(data);
 
-      // Шаг 2: stdin = временной токен
-      String stdin = getStdinToken(timestamp: timestamp);
-      if (password != null) stdin += password;
+      // Попробовать все валидные токены
+      final tokens = getAllValidTokens(timestamp: timestamp);
 
-      // Шаг 3: выполнить BF
-      final text = runBf(bfCode, stdin: stdin);
+      String resultText = '';
+      for (final token in tokens) {
+        String stdin = token;
+        if (password != null) stdin += password;
 
-      if (text.isEmpty) {
+        try {
+          final text = runBf(bfCode, stdin: stdin);
+          if (text.isNotEmpty) {
+            resultText = text;
+            break;
+          }
+        } catch (_) {
+          continue;
+        }
+      }
+
+      if (resultText.isEmpty) {
         return DecodeResult(
           text: '',
           bfCode: bfCode,
@@ -91,7 +103,7 @@ class SpoonCodec {
       }
 
       return DecodeResult(
-        text: text,
+        text: resultText,
         bfCode: bfCode,
         success: true,
       );

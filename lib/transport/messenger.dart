@@ -93,7 +93,7 @@ class SpoonMessenger {
       await relay.publish(
         circleKey,
         cid,
-        expiresAt: encoded.expiresAt.millisecondsSinceEpoch ~/ 1000,
+        // expiresAt убран
       );
 
       return SendResult(

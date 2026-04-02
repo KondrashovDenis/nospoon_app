@@ -6,15 +6,18 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../transport/circles_storage.dart';
+import '../transport/messenger.dart';
 
 class ComposeScreen extends StatefulWidget {
   final Circle circle;
   final SpoonTheme theme;
+  final SpoonMessenger? messenger;
 
   const ComposeScreen({
     super.key,
     required this.circle,
     required this.theme,
+    this.messenger,
   });
 
   @override
@@ -27,8 +30,14 @@ class _ComposeScreenState extends State<ComposeScreen> {
   String _ttl = '24h';
   bool _usePassword = false;
   bool _sending = false;
+  String _status = '';
 
-  final _ttlOptions = ['1h', '6h', '24h', '7d'];
+  final _ttlOptions = {
+    '1h': 3600,
+    '6h': 21600,
+    '24h': 86400,
+    '7d': 604800,
+  };
 
   @override
   void dispose() {
@@ -65,7 +74,6 @@ class _ComposeScreenState extends State<ComposeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Поле текста
               Expanded(
                 child: TextField(
                   controller: _textController,
@@ -75,8 +83,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
                   decoration: InputDecoration(
                     hintText: 'type your message_',
                     hintStyle: GoogleFonts.vt323(
-                      color: colors.textDim,
-                      fontSize: 20,
+                      color: colors.textDim, fontSize: 20,
                     ),
                     alignLabelWithHint: true,
                   ),
@@ -84,14 +91,13 @@ class _ComposeScreenState extends State<ComposeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // TTL выбор
               Text(
                 '> TTL:',
                 style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
               ),
               const SizedBox(height: 8),
               Row(
-                children: _ttlOptions.map((ttl) {
+                children: _ttlOptions.keys.map((ttl) {
                   final selected = _ttl == ttl;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
@@ -103,14 +109,20 @@ class _ComposeScreenState extends State<ComposeScreen> {
                         ),
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: selected ? colors.primary : colors.secondary,
+                            color: selected
+                                ? colors.primary
+                                : colors.secondary,
                           ),
-                          color: selected ? colors.dim : Colors.transparent,
+                          color: selected
+                              ? colors.dim
+                              : Colors.transparent,
                         ),
                         child: Text(
                           ttl,
                           style: GoogleFonts.vt323(
-                            color: selected ? colors.primary : colors.textDim,
+                            color: selected
+                                ? colors.primary
+                                : colors.textDim,
                             fontSize: 20,
                           ),
                         ),
@@ -121,18 +133,20 @@ class _ComposeScreenState extends State<ComposeScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Пароль опционально
               Row(
                 children: [
                   Checkbox(
                     value: _usePassword,
-                    onChanged: (v) => setState(() => _usePassword = v ?? false),
+                    onChanged: (v) =>
+                        setState(() => _usePassword = v ?? false),
                     activeColor: colors.primary,
                     checkColor: colors.background,
                   ),
                   Text(
                     'password',
-                    style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
+                    style: GoogleFonts.vt323(
+                      color: colors.textDim, fontSize: 18,
+                    ),
                   ),
                 ],
               ),
@@ -151,7 +165,16 @@ class _ComposeScreenState extends State<ComposeScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // Кнопка отправки
+              if (_status.isNotEmpty) ...[
+                Text(
+                  _status,
+                  style: GoogleFonts.vt323(
+                    color: colors.textDim, fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -170,12 +193,17 @@ class _ComposeScreenState extends State<ComposeScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'ENCODING...',
-                              style: GoogleFonts.vt323(fontSize: 20),
+                              _status.isNotEmpty
+                                  ? _status.toUpperCase()
+                                  : 'ENCODING...',
+                              style: GoogleFonts.vt323(fontSize: 18),
                             ),
                           ],
                         )
-                      : Text('> SEND', style: GoogleFonts.vt323(fontSize: 22)),
+                      : Text(
+                          '> SEND',
+                          style: GoogleFonts.vt323(fontSize: 22),
+                        ),
                 ),
               ),
             ],
@@ -188,24 +216,61 @@ class _ComposeScreenState extends State<ComposeScreen> {
   Future<void> _send() async {
     if (_textController.text.isEmpty) return;
 
-    setState(() => _sending = true);
+    setState(() {
+      _sending = true;
+      _status = 'encoding...';
+    });
 
-    // TODO v1.4.0 — реальная отправка через SpoonMessenger
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final messenger = widget.messenger ?? await SpoonMessenger.create();
 
-    setState(() => _sending = false);
+      setState(() => _status = 'uploading to ipfs...');
 
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'message encoded. sending... (v1.4.0)',
-            style: GoogleFonts.vt323(fontSize: 18),
-          ),
-          backgroundColor: AppTheme.getColors(widget.theme).dim,
-        ),
+      final result = await messenger.send(
+        _textController.text,
+        widget.circle.key,
+        ttlSeconds: _ttlOptions[_ttl] ?? 86400,
+        password: _usePassword && _passwordController.text.isNotEmpty
+            ? _passwordController.text
+            : null,
       );
+
+      setState(() {
+        _sending = false;
+        _status = '';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✓ sent. cid: ${result.cid.substring(0, 20)}...',
+              style: GoogleFonts.vt323(fontSize: 16),
+            ),
+            backgroundColor: AppTheme.getColors(widget.theme).dim,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      setState(() {
+        _sending = false;
+        _status = '';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'error: $e',
+              style: GoogleFonts.vt323(fontSize: 16),
+            ),
+            backgroundColor: Colors.red.withValues(alpha: 0.3),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
   }
 }

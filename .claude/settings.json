@@ -3,7 +3,11 @@
     "allow": [
       "Bash(flutter pub:*)",
       "Bash(flutter test:*)",
-      "Bash(flutter run:*)"
+      "Bash(flutter run:*)",
+      "Read(//d/VS_projects/nospoon/**)",
+      "Bash(flutter build:*)",
+      "Bash(wmic logicaldisk:*)",
+      "Bash(GRADLE_USER_HOME=\"D:/android_build\" flutter build apk --debug)"
     ],
     "additionalDirectories": [
       "d:\\VS_projects\\nospoon_app\\lib"

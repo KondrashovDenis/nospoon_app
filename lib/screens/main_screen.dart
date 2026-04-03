@@ -15,6 +15,10 @@ class MainScreen extends StatefulWidget {
   final bool scanlines;
   final bool glow;
   final bool flicker;
+  final Function(SpoonTheme) onThemeChanged;
+  final Function(bool) onScanlinesChanged;
+  final Function(bool) onGlowChanged;
+  final Function(bool) onFlickerChanged;
 
   const MainScreen({
     super.key,
@@ -22,6 +26,10 @@ class MainScreen extends StatefulWidget {
     required this.scanlines,
     required this.glow,
     required this.flicker,
+    required this.onThemeChanged,
+    required this.onScanlinesChanged,
+    required this.onGlowChanged,
+    required this.onFlickerChanged,
   });
 
   @override
@@ -174,7 +182,18 @@ class _MainScreenState extends State<MainScreen> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => SettingsScreen(theme: widget.theme),
+                builder: (_) => SettingsScreen(
+                  theme: widget.theme,
+                  scanlines: widget.scanlines,
+                  glow: widget.glow,
+                  flicker: widget.flicker,
+                  sound: false,
+                  onThemeChanged: widget.onThemeChanged,
+                  onScanlinesChanged: widget.onScanlinesChanged,
+                  onGlowChanged: widget.onGlowChanged,
+                  onFlickerChanged: widget.onFlickerChanged,
+                  onSoundChanged: (_) {},
+                ),
               ),
             ),
           ),
@@ -230,19 +249,28 @@ class _MainScreenState extends State<MainScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GlowText(
-            'no circles.',
-            style: GoogleFonts.vt323(fontSize: 32, color: colors.primary),
+            'there is no spoon.',
+            style: GoogleFonts.vt323(fontSize: 28, color: colors.primary),
             glowColor: colors.primary,
           ),
           const SizedBox(height: 8),
           Text(
-            'there is no server.',
+            'no server.',
             style: GoogleFonts.vt323(fontSize: 20, color: colors.textDim),
           ),
-          const SizedBox(height: 4),
           Text(
-            'there is no spoon.',
+            'no identity.',
             style: GoogleFonts.vt323(fontSize: 20, color: colors.textDim),
+          ),
+          Text(
+            'no trace.',
+            style: GoogleFonts.vt323(fontSize: 20, color: colors.textDim),
+          ),
+          const SizedBox(height: 16),
+          GlowText(
+            'only the message.',
+            style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
+            glowColor: colors.primary,
           ),
         ],
       ),

@@ -74,22 +74,43 @@ class SpoonCodec {
       // Шаг 1: .bin → BF
       final bfCode = SpoonTranscoder.decodeFromBin(data);
 
-      // Попробовать все валидные токены
       final tokens = getAllValidTokens(timestamp: timestamp);
 
       String resultText = '';
-      for (final token in tokens) {
-        String stdin = token;
-        if (password != null) stdin += password;
+      String lastError = '';
 
+      for (final token in tokens) {
+        // Сначала пробуем БЕЗ пароля
         try {
-          final text = runBf(bfCode, stdin: stdin);
+          final text = runBf(bfCode, stdin: token);
           if (text.isNotEmpty) {
-            resultText = text;
-            break;
+            if (password != null) {
+              final textWithPass = runBf(bfCode, stdin: token + password);
+              if (textWithPass.isNotEmpty) {
+                resultText = textWithPass;
+                break;
+              }
+            } else {
+              resultText = text;
+              break;
+            }
           }
-        } catch (_) {
+        } catch (e) {
+          lastError = e.toString();
           continue;
+        }
+
+        // Пробуем с паролем если передан
+        if (password != null) {
+          try {
+            final text = runBf(bfCode, stdin: token + password);
+            if (text.isNotEmpty) {
+              resultText = text;
+              break;
+            }
+          } catch (e) {
+            lastError = e.toString();
+          }
         }
       }
 
@@ -98,7 +119,9 @@ class SpoonCodec {
           text: '',
           bfCode: bfCode,
           success: false,
-          error: 'TTL истёк или неверный пароль',
+          error: lastError.isNotEmpty
+              ? lastError
+              : 'TTL истёк или неверный пароль',
         );
       }
 

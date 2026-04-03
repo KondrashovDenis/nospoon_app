@@ -1,6 +1,8 @@
 /// Text → Brainfuck компилятор
 /// Порт Python core/compiler.py на Dart
 
+import 'dart:convert';
+
 class BrainfuckCompiler {
   /// Найти лучший множитель для n
   static int findBestFactor(int n) {
@@ -48,9 +50,10 @@ class BrainfuckCompiler {
   /// Скомпилировать строку текста в BF программу
   static String compileText(String text) {
     if (text.isEmpty) return '';
+    final bytes = utf8.encode(text);
     final result = StringBuffer();
-    for (final rune in text.runes) {
-      result.write(compileChar(rune));
+    for (final byte in bytes) {
+      result.write(compileChar(byte));
     }
     return result.toString();
   }

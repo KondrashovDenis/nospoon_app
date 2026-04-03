@@ -61,6 +61,14 @@ class _SpoonAppState extends State<SpoonApp> {
         scanlines: _scanlines,
         glow: _glow,
         flicker: _flicker,
+        onThemeChanged: (t) async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt('theme', t.index);
+          setState(() => _theme = t);
+        },
+        onScanlinesChanged: (v) => setState(() => _scanlines = v),
+        onGlowChanged: (v) => setState(() => _glow = v),
+        onFlickerChanged: (v) => setState(() => _flicker = v),
       ),
     );
   }

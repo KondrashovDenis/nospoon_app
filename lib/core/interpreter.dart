@@ -1,5 +1,8 @@
 /// Brainfuck интерпретатор
 /// Порт Python core/interpreter.py на Dart
+library;
+
+import 'dart:convert';
 
 class BrainfuckError implements Exception {
   final String message;
@@ -17,16 +20,18 @@ class BrainfuckInterpreter {
     this.maxSteps = 1000000,
   });
 
-  /// Выполнить BF программу
   String run(String bfCode, {String stdin = ''}) {
     final tape = List<int>.filled(tapeSize, 0);
     int ptr = 0;
     int pc = 0;
-    final output = StringBuffer();
+    final outputBytes = <int>[];
     int inputPtr = 0;
     int steps = 0;
 
     final bracketMap = _buildBracketMap(bfCode);
+
+    // stdin как байты для корректной работы с UTF-8 токенами
+    final stdinBytes = utf8.encode(stdin);
 
     while (pc < bfCode.length) {
       final cmd = bfCode[pc];
@@ -45,15 +50,19 @@ class BrainfuckInterpreter {
           tape[ptr] = (tape[ptr] - 1 + 256) % 256;
         case '>':
           ptr++;
-          if (ptr >= tapeSize) throw BrainfuckError('Выход за пределы ленты (вправо)');
+          if (ptr >= tapeSize) {
+            throw BrainfuckError('Выход за пределы ленты (вправо)');
+          }
         case '<':
           ptr--;
-          if (ptr < 0) throw BrainfuckError('Выход за пределы ленты (влево)');
+          if (ptr < 0) {
+            throw BrainfuckError('Выход за пределы ленты (влево)');
+          }
         case '.':
-          output.writeCharCode(tape[ptr]);
+          outputBytes.add(tape[ptr]);
         case ',':
-          if (inputPtr < stdin.length) {
-            tape[ptr] = stdin.codeUnitAt(inputPtr);
+          if (inputPtr < stdinBytes.length) {
+            tape[ptr] = stdinBytes[inputPtr] % 256;
             inputPtr++;
           } else {
             tape[ptr] = 0;
@@ -65,7 +74,13 @@ class BrainfuckInterpreter {
       }
       pc++;
     }
-    return output.toString();
+
+    // Декодировать байты как UTF-8
+    try {
+      return utf8.decode(outputBytes);
+    } catch (_) {
+      return String.fromCharCodes(outputBytes);
+    }
   }
 
   Map<int, int> _buildBracketMap(String bfCode) {
@@ -86,13 +101,14 @@ class BrainfuckInterpreter {
     }
 
     if (stack.isNotEmpty) {
-      throw BrainfuckError('Несбалансированная скобка [ на позиции ${stack.last}');
+      throw BrainfuckError(
+        'Несбалансированная скобка [ на позиции ${stack.last}'
+      );
     }
     return map;
   }
 }
 
-/// Удобная функция-обёртка
 String runBf(String bfCode, {String stdin = '', int maxSteps = 1000000}) {
   return BrainfuckInterpreter(maxSteps: maxSteps).run(bfCode, stdin: stdin);
 }

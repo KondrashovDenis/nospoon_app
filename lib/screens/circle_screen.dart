@@ -233,6 +233,7 @@ class _CircleScreenState extends State<CircleScreen> {
 
     return GestureDetector(
       onTap: () => _openCeremony(msg),
+      behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),

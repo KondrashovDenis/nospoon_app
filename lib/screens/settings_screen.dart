@@ -3,13 +3,35 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 
 class SettingsScreen extends StatefulWidget {
   final SpoonTheme theme;
+  final bool scanlines;
+  final bool glow;
+  final bool flicker;
+  final bool sound;
+  final Function(SpoonTheme) onThemeChanged;
+  final Function(bool) onScanlinesChanged;
+  final Function(bool) onGlowChanged;
+  final Function(bool) onFlickerChanged;
+  final Function(bool) onSoundChanged;
 
-  const SettingsScreen({super.key, required this.theme});
+  const SettingsScreen({
+    super.key,
+    required this.theme,
+    required this.scanlines,
+    required this.glow,
+    required this.flicker,
+    required this.sound,
+    required this.onThemeChanged,
+    required this.onScanlinesChanged,
+    required this.onGlowChanged,
+    required this.onFlickerChanged,
+    required this.onSoundChanged,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -17,20 +39,49 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late SpoonTheme _theme;
-  bool _scanlines = true;
-  bool _glow = true;
-  bool _flicker = false;
-  bool _sound = false;
+  late bool _scanlines;
+  late bool _glow;
+  late bool _flicker;
+  late bool _sound;
 
   @override
   void initState() {
     super.initState();
     _theme = widget.theme;
-    _loadSettings();
+    _scanlines = widget.scanlines;
+    _glow = widget.glow;
+    _flicker = widget.flicker;
+    _sound = widget.sound;
   }
 
-  Future<void> _loadSettings() async {
-    // TODO — загрузить из SharedPreferences через AppState
+  Future<void> _saveTheme(SpoonTheme theme) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('theme', theme.index);
+    widget.onThemeChanged(theme);
+  }
+
+  Future<void> _saveScanlines(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('scanlines', value);
+    widget.onScanlinesChanged(value);
+  }
+
+  Future<void> _saveGlow(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('glow', value);
+    widget.onGlowChanged(value);
+  }
+
+  Future<void> _saveFlicker(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('flicker', value);
+    widget.onFlickerChanged(value);
+  }
+
+  Future<void> _saveSound(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sound', value);
+    widget.onSoundChanged(value);
   }
 
   @override
@@ -54,7 +105,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Тема
             Text(
               '> THEME',
               style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
@@ -62,8 +112,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 8),
             ...SpoonTheme.values.map((t) {
               final selected = _theme == t;
+              final tColors = AppTheme.getColors(t);
               return GestureDetector(
-                onTap: () => setState(() => _theme = t),
+                onTap: () {
+                  setState(() => _theme = t);
+                  _saveTheme(t);
+                },
                 child: Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
@@ -75,6 +129,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Row(
                     children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        color: tColors.primary,
+                        margin: const EdgeInsets.only(right: 12),
+                      ),
                       if (selected)
                         GlowText(
                           '> ',
@@ -103,14 +163,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 8),
 
-            _buildToggle('SCANLINES', _scanlines, colors,
-                (v) => setState(() => _scanlines = v)),
-            _buildToggle('PHOSPHOR GLOW', _glow, colors,
-                (v) => setState(() => _glow = v)),
-            _buildToggle('SCREEN FLICKER', _flicker, colors,
-                (v) => setState(() => _flicker = v)),
-            _buildToggle('SOUND', _sound, colors,
-                (v) => setState(() => _sound = v)),
+            _buildToggle('SCANLINES', _scanlines, colors, (v) {
+              setState(() => _scanlines = v);
+              _saveScanlines(v);
+            }),
+            _buildToggle('PHOSPHOR GLOW', _glow, colors, (v) {
+              setState(() => _glow = v);
+              _saveGlow(v);
+            }),
+            _buildToggle('SCREEN FLICKER', _flicker, colors, (v) {
+              setState(() => _flicker = v);
+              _saveFlicker(v);
+            }),
+            _buildToggle('SOUND', _sound, colors, (v) {
+              setState(() => _sound = v);
+              _saveSound(v);
+            }),
 
             const SizedBox(height: 24),
             Text(
@@ -119,7 +187,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'spoon messenger v1.3.0\nthere is no server.\nthere is no spoon.',
+              'spoon messenger v1.6.0',
+              style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            GlowText(
+              'there is no spoon.',
+              style: GoogleFonts.vt323(fontSize: 20, color: colors.primary),
+              glowColor: colors.primary,
+            ),
+            Text(
+              'no server.\nno identity.\nno trace.\n\nonly the message.',
               style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
             ),
           ],

@@ -160,13 +160,19 @@ class _BlinkingCursorState extends State<BlinkingCursor>
 
   @override
   Widget build(BuildContext context) {
+    // Горизонтальный прямоугольник — классический терминальный курсор
+    // ширина = ~0.6 от fontSize, высота = fontSize
+    final cursorWidth = widget.fontSize * 0.6;
+    final cursorHeight = widget.fontSize * 1.1;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) => Opacity(
         opacity: _controller.value > 0.5 ? 1.0 : 0.0,
-        child: Text(
-          '█',
-          style: TextStyle(color: widget.color, fontSize: widget.fontSize),
+        child: Container(
+          width: cursorWidth,
+          height: cursorHeight,
+          color: widget.color,
         ),
       ),
     );

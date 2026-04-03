@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
 import 'screens/main_screen.dart';
+import 'services/sound_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +31,7 @@ class _SpoonAppState extends State<SpoonApp> {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    await SoundService().init();
     setState(() {
       _theme = SpoonTheme.values[prefs.getInt('theme') ?? 0];
       _scanlines = prefs.getBool('scanlines') ?? true;

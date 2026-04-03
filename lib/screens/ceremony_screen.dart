@@ -194,7 +194,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
       backgroundColor: colors.background,
       appBar: AppBar(
         title: GlowText(
-          '> CEREMONY',
+          '> DECODING',
           style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
           glowColor: colors.primary,
         ),

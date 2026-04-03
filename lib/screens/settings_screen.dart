@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../screens/logs_screen.dart';
+import '../services/sound_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final SpoonTheme theme;
@@ -53,6 +54,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _glow = widget.glow;
     _flicker = widget.flicker;
     _sound = widget.sound;
+    _loadSound();
+  }
+
+  Future<void> _loadSound() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _sound = prefs.getBool('sound') ?? false;
+    });
   }
 
   Future<void> _saveTheme(SpoonTheme theme) async {
@@ -82,6 +91,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _saveSound(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('sound', value);
+    SoundService().setEnabled(value);
     widget.onSoundChanged(value);
   }
 

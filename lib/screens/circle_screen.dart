@@ -316,15 +316,6 @@ class _CircleScreenState extends State<CircleScreen> {
                   if (isLoading)
                     Row(
                       children: [
-                        SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(
-                            color: colors.primary,
-                            strokeWidth: 1.5,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
                         Text(
                           'Loading message...',
                           style: GoogleFonts.vt323(

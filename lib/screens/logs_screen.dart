@@ -72,9 +72,9 @@ class LogsScreen extends StatelessWidget {
             return ListView.builder(
               padding: const EdgeInsets.all(8),
               itemCount: logs.length,
-              reverse: true,
+              reverse: false,
               itemBuilder: (ctx, i) {
-                final entry = logs[logs.length - 1 - i];
+                final entry = logs[i];
                 Color entryColor;
                 switch (entry.level) {
                   case 'ERROR':

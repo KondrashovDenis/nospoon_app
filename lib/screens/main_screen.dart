@@ -168,12 +168,12 @@ class _MainScreenState extends State<MainScreen> {
         title: Row(
           children: [
             GlowText(
-              '🥄 SPOON',
-              style: GoogleFonts.vt323(fontSize: 26, color: colors.primary),
+              '🥄 NO SPOON APP',
+              style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
               glowColor: colors.primary,
             ),
             const SizedBox(width: 8),
-            BlinkingCursor(color: colors.cursor, fontSize: 20),
+            BlinkingCursor(color: colors.cursor, fontSize: 18),
           ],
         ),
         actions: [

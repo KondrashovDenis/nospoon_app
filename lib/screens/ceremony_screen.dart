@@ -9,6 +9,7 @@ import 'dart:async';
 import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../core/codec.dart';
+import '../services/sound_service.dart';
 
 enum CeremonyStage { loading, bits, brainfuck, password, result, error }
 
@@ -177,6 +178,10 @@ class _CeremonyScreenState extends State<CeremonyScreen>
       setState(() {
         _displayText = text.substring(0, index + 1);
       });
+      // Звук печатной машинки каждые 3 символа
+      if (index % 3 == 0) {
+        SoundService().playTypewriter();
+      }
       index++;
     });
   }
@@ -255,7 +260,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
             style: GoogleFonts.vt323(fontSize: 20, color: colors.primary),
             glowColor: colors.primary,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             '${widget.binary.length} bytes',
             style: GoogleFonts.vt323(color: colors.textDim, fontSize: 16),
@@ -263,13 +268,16 @@ class _CeremonyScreenState extends State<CeremonyScreen>
           const SizedBox(height: 16),
           Expanded(
             child: SingleChildScrollView(
-              reverse: true,
-              child: Text(
-                _displayBits,
-                style: GoogleFonts.vt323(
-                  color: colors.secondary,
-                  fontSize: 14,
-                  height: 1.4,
+              reverse: false,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Text(
+                  _displayBits,
+                  style: GoogleFonts.vt323(
+                    color: colors.secondary,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
                 ),
               ),
             ),
@@ -290,7 +298,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
             style: GoogleFonts.vt323(fontSize: 20, color: colors.primary),
             glowColor: colors.primary,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             '${_bfCode.length} instructions',
             style: GoogleFonts.vt323(color: colors.textDim, fontSize: 16),
@@ -298,22 +306,26 @@ class _CeremonyScreenState extends State<CeremonyScreen>
           const SizedBox(height: 16),
           Expanded(
             child: SingleChildScrollView(
-              reverse: true,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      _displayBf,
-                      style: GoogleFonts.vt323(
-                        color: colors.primary,
-                        fontSize: 16,
-                        height: 1.4,
+              reverse: false,
+              controller: ScrollController(),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _displayBf,
+                        style: GoogleFonts.vt323(
+                          color: colors.primary,
+                          fontSize: 16,
+                          height: 1.4,
+                        ),
                       ),
                     ),
-                  ),
-                  BlinkingCursor(color: colors.cursor, fontSize: 16),
-                ],
+                    BlinkingCursor(color: colors.cursor, fontSize: 16),
+                  ],
+                ),
               ),
             ),
           ),

@@ -24,6 +24,9 @@ class ComposeScreen extends StatefulWidget {
   State<ComposeScreen> createState() => _ComposeScreenState();
 }
 
+// Счётчик символов
+const int maxChars = 350;
+
 class _ComposeScreenState extends State<ComposeScreen> {
   final _textController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -31,6 +34,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
   bool _usePassword = false;
   bool _sending = false;
   String _status = '';
+  int _charCount = 0;
 
   final _ttlOptions = {
     '1h': 3600,
@@ -38,6 +42,14 @@ class _ComposeScreenState extends State<ComposeScreen> {
     '24h': 86400,
     '7d': 604800,
   };
+
+  @override
+  void initState() {
+    super.initState();
+    _textController.addListener(() {
+      setState(() => _charCount = _textController.text.length);
+    });
+  }
 
   @override
   void dispose() {
@@ -80,6 +92,9 @@ class _ComposeScreenState extends State<ComposeScreen> {
                   style: GoogleFonts.vt323(color: colors.text, fontSize: 20),
                   maxLines: null,
                   expands: true,
+                  maxLength: 350,
+                  buildCounter: (context, {required currentLength,
+                      required isFocused, maxLength}) => null,
                   decoration: InputDecoration(
                     hintText: 'type your message_',
                     hintStyle: GoogleFonts.vt323(
@@ -87,6 +102,29 @@ class _ComposeScreenState extends State<ComposeScreen> {
                     ),
                     alignLabelWithHint: true,
                   ),
+                ),
+              ),
+
+              // Счётчик под полем
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      _charCount >= 350
+                          ? 'Symbol limit is reached'
+                          : '$_charCount/350',
+                      style: GoogleFonts.vt323(
+                        color: _charCount >= 350
+                            ? Colors.red
+                            : _charCount > 300
+                                ? Colors.orange
+                                : colors.textDim,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),

@@ -12,7 +12,8 @@
       "Bash(powershell -Command \"Remove-Item -Recurse -Force 'C:\\\\Users\\\\denci\\\\.gradle\\\\caches'; Remove-Item -Recurse -Force 'C:\\\\Users\\\\denci\\\\.gradle\\\\wrapper'; Write-Host 'done'\")",
       "Bash(mkdir /tmp/empty_dir)",
       "Bash(powershell -Command ':*)",
-      "Bash(powershell -Command \"[System.Environment]::SetEnvironmentVariable\\('GRADLE_USER_HOME', 'D:\\\\android_build', 'User'\\); Write-Host 'done'\")"
+      "Bash(powershell -Command \"[System.Environment]::SetEnvironmentVariable\\('GRADLE_USER_HOME', 'D:\\\\android_build', 'User'\\); Write-Host 'done'\")",
+      "Bash(flutter clean:*)"
     ],
     "additionalDirectories": [
       "d:\\VS_projects\\nospoon_app\\lib"

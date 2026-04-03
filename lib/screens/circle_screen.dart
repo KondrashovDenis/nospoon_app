@@ -7,6 +7,8 @@ import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../transport/circles_storage.dart';
 import '../transport/messenger.dart';
+import '../services/logger_service.dart';
+import '../services/sound_service.dart';
 import 'compose_screen.dart';
 import 'ceremony_screen.dart';
 import 'qr_screen.dart';
@@ -36,6 +38,7 @@ class _CircleScreenState extends State<CircleScreen> {
   bool _loading = false;
   String? _error;
   SpoonMessenger? _messenger;
+  String? _loadingCid;
 
   @override
   void initState() {
@@ -46,8 +49,10 @@ class _CircleScreenState extends State<CircleScreen> {
   Future<void> _initMessenger() async {
     try {
       _messenger = await SpoonMessenger.create();
+      logger.info('Messenger initialized for circle: ${widget.circle.key}');
       _loadFeed();
     } catch (e) {
+      logger.error('Messenger init error: $e');
       setState(() => _error = 'Messenger init error: $e');
     }
   }
@@ -59,28 +64,62 @@ class _CircleScreenState extends State<CircleScreen> {
       _error = null;
     });
 
+    await SoundService().playModem();
+
     try {
+      logger.info('Loading feed for circle: ${widget.circle.key}');
       final messages = await _messenger!.receive(widget.circle.key);
-      debugPrint('=== FEED LOADED ===');
-      debugPrint('circle key: ${widget.circle.key}');
-      debugPrint('messages count: ${messages.length}');
-      for (final m in messages) {
-        debugPrint('  cid: ${m.cid}');
-        debugPrint('  success: ${m.success}');
-        debugPrint('  text: ${m.text}');
-        debugPrint('  error: ${m.error}');
-      }
+      logger.info('Feed loaded: ${messages.length} messages');
       setState(() {
         _messages = messages;
         _loading = false;
       });
     } catch (e) {
-      debugPrint('=== FEED ERROR ===');
-      debugPrint(e.toString());
+      logger.error('Feed load error: $e');
       setState(() {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _deleteCircle() async {
+    final colors = AppTheme.getColors(widget.theme);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.background,
+        title: GlowText(
+          '> DELETE CIRCLE',
+          style: GoogleFonts.vt323(fontSize: 22, color: Colors.red),
+          glowColor: Colors.red,
+        ),
+        content: Text(
+          'Remove "${widget.circle.name}" from your list?\n\nOthers will keep access.',
+          style: GoogleFonts.vt323(color: colors.text, fontSize: 18),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(
+              'CANCEL',
+              style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(
+              'DELETE',
+              style: GoogleFonts.vt323(color: Colors.red, fontSize: 18),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await CirclesStorage.remove(widget.circle.key);
+      if (mounted) Navigator.pop(context, true);
     }
   }
 
@@ -122,19 +161,32 @@ class _CircleScreenState extends State<CircleScreen> {
         flicker: widget.flicker,
         child: _buildBody(colors),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ComposeScreen(
-              circle: widget.circle,
-              theme: widget.theme,
-              messenger: _messenger,
-            ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'delete_circle',
+            onPressed: _deleteCircle,
+            backgroundColor: colors.dim,
+            child: Icon(Icons.delete_outline, color: Colors.red),
           ),
-        ).then((_) => _loadFeed()),
-        backgroundColor: colors.dim,
-        child: Icon(Icons.edit, color: colors.primary),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'compose',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ComposeScreen(
+                  circle: widget.circle,
+                  theme: widget.theme,
+                  messenger: _messenger,
+                ),
+              ),
+            ).then((_) => _loadFeed()),
+            backgroundColor: colors.dim,
+            child: Icon(Icons.edit, color: colors.primary),
+          ),
+        ],
       ),
     );
   }
@@ -178,7 +230,9 @@ class _CircleScreenState extends State<CircleScreen> {
               padding: const EdgeInsets.all(16),
               child: Text(
                 _error!,
-                style: GoogleFonts.vt323(color: colors.textDim, fontSize: 16),
+                style: GoogleFonts.vt323(
+                  color: colors.textDim, fontSize: 16,
+                ),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -231,8 +285,10 @@ class _CircleScreenState extends State<CircleScreen> {
         '${publishedAt.day.toString().padLeft(2, '0')}.'
         '${publishedAt.month.toString().padLeft(2, '0')}';
 
+    final isLoading = _loadingCid == msg.cid;
+
     return GestureDetector(
-      onTap: () => _openCeremony(msg),
+      onTap: isLoading ? null : () => _openCeremony(msg),
       behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -257,29 +313,53 @@ class _CircleScreenState extends State<CircleScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    'tap to decode',
-                    style: GoogleFonts.vt323(
-                      color: colors.textDim,
-                      fontSize: 16,
+                  if (isLoading)
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            color: colors.primary,
+                            strokeWidth: 1.5,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Loading message...',
+                          style: GoogleFonts.vt323(
+                            color: colors.textDim, fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Text(
+                      'tap to decode',
+                      style: GoogleFonts.vt323(
+                        color: colors.textDim, fontSize: 16,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                   Text(
                     timeStr,
                     style: GoogleFonts.vt323(
-                      color: colors.textDim,
-                      fontSize: 14,
+                      color: colors.textDim, fontSize: 14,
                     ),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: colors.primary,
-            ),
+            if (isLoading)
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  color: colors.primary,
+                  strokeWidth: 2,
+                ),
+              )
+            else
+              Icon(Icons.chevron_right, color: colors.primary),
           ],
         ),
       ),
@@ -289,8 +369,17 @@ class _CircleScreenState extends State<CircleScreen> {
   Future<void> _openCeremony(ReceivedMessage msg) async {
     if (_messenger == null) return;
 
+    setState(() => _loadingCid = msg.cid);
+    logger.info('Downloading message: ${msg.cid}');
+
+    await SoundService().playModem();
+
     try {
       final binary = await _messenger!.ipfs.download(msg.cid);
+      logger.info('Downloaded ${binary.length} bytes');
+
+      setState(() => _loadingCid = null);
+
       if (mounted) {
         Navigator.push(
           context,
@@ -304,14 +393,17 @@ class _CircleScreenState extends State<CircleScreen> {
         );
       }
     } catch (e) {
+      logger.error('Download error: $e');
+      setState(() => _loadingCid = null);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'download error: $e',
+              'error: $e',
               style: GoogleFonts.vt323(fontSize: 16),
             ),
-            backgroundColor: AppTheme.getColors(widget.theme).dim,
+            backgroundColor: Colors.red.withValues(alpha: 0.3),
+            duration: const Duration(seconds: 5),
           ),
         );
       }

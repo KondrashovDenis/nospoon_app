@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
+import '../screens/logs_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   final SpoonTheme theme;
@@ -199,6 +200,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Text(
               'no server.\nno identity.\nno trace.\n\nonly the message.',
               style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LogsScreen(theme: _theme),
+                ),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: colors.secondary),
+                  color: colors.dim,
+                ),
+                child: Text(
+                  '> VIEW LOGS',
+                  style: GoogleFonts.vt323(color: colors.textDim, fontSize: 20),
+                ),
+              ),
             ),
           ],
         ),

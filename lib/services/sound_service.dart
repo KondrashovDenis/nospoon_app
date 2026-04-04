@@ -64,7 +64,79 @@ class SoundService {
     }
   }
 
-  /// Звук модема при загрузке
+  bool _modemLooping = false;
+
+  /// Запустить петлю модема пока идёт загрузка
+  Future<void> startModemLoop() async {
+    if (!_enabled || !_initialized) return;
+    _modemLooping = true;
+    _runModemLoop();
+  }
+
+  /// Остановить петлю модема
+  void stopModemLoop() {
+    _modemLooping = false;
+  }
+
+  Future<void> _runModemLoop() async {
+    final sequence = [
+      (1200.0, 90,  0),
+      (2400.0, 60,  90),
+      (1800.0, 110, 0),
+      (600.0,  45,  180),
+      (2200.0, 80,  0),
+      (900.0,  70,  70),
+      (1500.0, 55,  0),
+      (2100.0, 95,  110),
+      (1100.0, 40,  0),
+      (1900.0, 85,  0),
+      (750.0,  65,  160),
+      (2600.0, 50,  0),
+      (1350.0, 75,  75),
+      (500.0,  100, 0),
+      (2050.0, 45,  0),
+      (1650.0, 80,  0),
+      (2300.0, 55,  0),
+      (850.0,  70,  85),
+      (1750.0, 60,  0),
+      (2700.0, 40,  0),
+      (1050.0, 90,  0),
+      (1450.0, 50,  0),
+      (2150.0, 75,  100),
+      (650.0,  85,  0),
+      (1950.0, 45,  0),
+      (2450.0, 65,  0),
+      (1250.0, 80,  0),
+      (550.0,  55,  0),
+      (2350.0, 70,  90),
+      (1550.0, 60,  0),
+      (800.0,  95,  0),
+      (2000.0, 50,  0),
+    ];
+
+    int i = 0;
+    while (_modemLooping && _initialized) {
+      if (!_enabled) break;
+      final (freq, dur, pause) = sequence[i % sequence.length];
+      try {
+        final source = await SoLoud.instance.loadWaveform(
+          WaveForm.sin, true, 0.25, 1,
+        );
+        final handle = await SoLoud.instance.play(source, volume: 0.2);
+        SoLoud.instance.setRelativePlaySpeed(handle, freq / 440.0);
+        await Future.delayed(Duration(milliseconds: dur));
+        SoLoud.instance.stop(handle);
+        SoLoud.instance.disposeSource(source);
+
+        if (pause > 0 && _modemLooping) {
+          await Future.delayed(Duration(milliseconds: pause));
+        }
+      } catch (_) {}
+      i++;
+    }
+  }
+
+  /// Одиночный модем (без петли) — для обратной совместимости
   Future<void> playModem() async {
     if (!_enabled || !_initialized) return;
     try {

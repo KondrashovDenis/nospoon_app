@@ -9,6 +9,7 @@ import '../transport/circles_storage.dart';
 import '../transport/messenger.dart';
 import '../services/logger_service.dart';
 import '../services/sound_service.dart';
+import 'dart:typed_data';
 import '../core/codec.dart';
 import 'compose_screen.dart';
 import 'ceremony_screen.dart';
@@ -65,13 +66,14 @@ class _CircleScreenState extends State<CircleScreen> {
       _error = null;
     });
 
-    await SoundService().playModem();
+    SoundService().startModemLoop();
 
     try {
       logger.info('Loading feed for board: ${widget.circle.key}');
       final messages = await _messenger!.receive(widget.circle.key);
       logger.info('Feed loaded: ${messages.length} messages');
 
+      SoundService().stopModemLoop();
       await SoundService().playClick();
 
       setState(() {
@@ -79,6 +81,7 @@ class _CircleScreenState extends State<CircleScreen> {
         _loading = false;
       });
     } catch (e) {
+      SoundService().stopModemLoop();
       logger.error('Feed load error: $e');
       setState(() {
         _error = e.toString();
@@ -367,23 +370,39 @@ class _CircleScreenState extends State<CircleScreen> {
     setState(() => _loadingCid = msg.cid);
     logger.info('Downloading: ${msg.cid}');
 
-    SoundService().playModem();
+    SoundService().startModemLoop();
 
     try {
       final binary = await _messenger!.ipfs.download(msg.cid);
       logger.info('Downloaded ${binary.length} bytes');
-      SoundService().playClick();
+
+      SoundService().stopModemLoop();
+      await SoundService().playClick();
 
       setState(() => _loadingCid = null);
       if (!mounted) return;
 
-      // Быстрая проверка — нужен ли пароль
+      // Диагностика пароля
       final quickCheck = SpoonCodec.decode(binary);
-      String? password;
+      logger.info('quickCheck.success: ${quickCheck.success}');
+      logger.info('quickCheck.error: ${quickCheck.error}');
+      logger.info('quickCheck.text length: ${quickCheck.text.length}');
+      if (quickCheck.text.isNotEmpty) {
+        final preview = quickCheck.text.codeUnits
+            .take(10)
+            .map((c) => '0x${c.toRadixString(16)}')
+            .join(' ');
+        logger.info('quickCheck.text bytes: $preview');
+      }
 
+      // Проверить нужен ли пароль
+      String? password;
       if (quickCheck.error == 'password_required') {
-        password = await _showPasswordDialog();
-        if (password == null || password.isEmpty) return;
+        logger.info('Password required — showing dialog');
+        password = await _showPasswordFlow(binary);
+        if (password == null) return;
+      } else {
+        logger.info('No password needed — opening ceremony');
       }
 
       if (mounted) {
@@ -400,6 +419,7 @@ class _CircleScreenState extends State<CircleScreen> {
         );
       }
     } catch (e) {
+      SoundService().stopModemLoop();
       logger.error('Download error: $e');
       setState(() => _loadingCid = null);
       if (mounted) {
@@ -417,12 +437,44 @@ class _CircleScreenState extends State<CircleScreen> {
     }
   }
 
+  /// Флоу ввода пароля с обработкой неверного пароля
+  Future<String?> _showPasswordFlow(Uint8List binary) async {
+    String? password = await _showPasswordDialog();
+
+    while (password != null && password.isNotEmpty) {
+      logger.info('Checking password: ${password.length} chars');
+
+      final result = SpoonCodec.decode(binary, password: password);
+      logger.info('Password check: success=${result.success} error=${result.error}');
+
+      if (result.success) {
+        logger.info('Password correct!');
+        return password;
+      }
+
+      if (result.error == 'wrong_password') {
+        logger.info('Wrong password — showing error dialog');
+        final action = await _showWrongPasswordDialog();
+        if (action == 'try_again') {
+          password = await _showPasswordDialog();
+        } else {
+          return null;
+        }
+      } else {
+        // TTL или другая ошибка
+        return null;
+      }
+    }
+    return null;
+  }
+
   Future<String?> _showPasswordDialog() async {
     final colors = AppTheme.getColors(widget.theme);
     final controller = TextEditingController();
 
     return showDialog<String>(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.background,
         title: GlowText(
@@ -466,6 +518,44 @@ class _CircleScreenState extends State<CircleScreen> {
             onPressed: () => Navigator.pop(ctx, controller.text),
             child: GlowText(
               'DECRYPT',
+              style: GoogleFonts.vt323(fontSize: 18, color: colors.primary),
+              glowColor: colors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<String?> _showWrongPasswordDialog() async {
+    final colors = AppTheme.getColors(widget.theme);
+
+    return showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.background,
+        title: GlowText(
+          '> WRONG PASSWORD KEY',
+          style: GoogleFonts.vt323(fontSize: 20, color: Colors.red),
+          glowColor: Colors.red,
+        ),
+        content: Text(
+          'The key you entered is incorrect.\nThis message cannot be decrypted.',
+          style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'exit'),
+            child: Text(
+              'EXIT',
+              style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'try_again'),
+            child: GlowText(
+              'TRY AGAIN',
               style: GoogleFonts.vt323(fontSize: 18, color: colors.primary),
               glowColor: colors.primary,
             ),

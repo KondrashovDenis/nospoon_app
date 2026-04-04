@@ -30,20 +30,32 @@ class BrainfuckCompiler {
     final quotient = asciiVal ~/ factor;
     final remainder = asciiVal % factor;
 
-    if (factor == 1) {
-      return '+' * asciiVal + '.';
+    final bf = StringBuffer();
+
+    if (factor == 1 || quotient == 0) {
+      // Наивный вариант для малых значений
+      bf.write('+' * asciiVal);
+      bf.write('.');
+      bf.write('[-]'); // очистить ячейку
+      return bf.toString();
     }
 
-    final bf = StringBuffer();
-    bf.write('+' * factor);
-    bf.write('[>+');
-    bf.write('+' * (quotient - 1));
-    bf.write('<-]');
-    bf.write('>');
-    bf.write('+' * remainder);
-    bf.write('.');
-    bf.write('[-]');
-    bf.write('<');
+    // Структура: используем две ячейки
+    // cell[ptr] = счётчик цикла (factor)
+    // cell[ptr+1] = рабочая ячейка (накапливаем quotient * factor)
+    bf.write('+' * factor);          // cell0 = factor
+    bf.write('[');                    // начало цикла
+    bf.write('>');                    // перейти в cell1
+    bf.write('+' * quotient);        // добавить quotient
+    bf.write('<');                    // вернуться в cell0
+    bf.write('-');                    // декрементировать счётчик
+    bf.write(']');                    // конец цикла
+    bf.write('>');                    // перейти в cell1 (= factor * quotient)
+    bf.write('+' * remainder);       // добавить остаток
+    bf.write('.');                    // вывести символ
+    bf.write('[-]');                  // очистить cell1
+    bf.write('<');                    // вернуться в cell0 (уже 0)
+
     return bf.toString();
   }
 

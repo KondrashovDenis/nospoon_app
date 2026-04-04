@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nospoon_app/core/codec.dart';
+import 'package:nospoon_app/core/compiler.dart';
+import 'package:nospoon_app/core/interpreter.dart';
 
 void main() {
   group('SpoonCodec', () {
@@ -39,16 +41,46 @@ void main() {
       expect(decoded.success, isFalse);
     });
 
-    test('encode с паролем добавляет маркер', () {
-      final result = SpoonCodec.encode('Secret', ttlSeconds: 3600, password: 'key');
-      // Декодирование без пароля должно вернуть password_required
-      final decoded = SpoonCodec.decode(result.binary);
+    test('passwordMarker компилируется и декодируется корректно', () {
+      final bf = BrainfuckCompiler.compileText('\x01Secret');
+      final result = runBf(bf);
+      expect(result, equals('\x01Secret'));
+    });
+
+    test('encode без пароля декодируется напрямую', () {
+      const text = 'Hello';
+      final encoded = SpoonCodec.encode(text, ttlSeconds: 3600);
+      final decoded = SpoonCodec.decode(encoded.binary);
+      expect(decoded.success, isTrue);
+      expect(decoded.text, equals(text));
+    });
+
+    test('encode с паролем — без пароля возвращает password_required', () {
+      final encoded = SpoonCodec.encode('Secret', ttlSeconds: 3600, password: 'key123');
+      final decoded = SpoonCodec.decode(encoded.binary);
+      expect(decoded.success, isFalse);
       expect(decoded.error, equals('password_required'));
     });
 
-    test('encode с паролем декодируется с правильным паролем', () {
-      const text = 'Secret';
+    test('encode с паролем — верный пароль декодирует текст', () {
+      const text = 'Secret message';
       const password = 'mykey';
+      final encoded = SpoonCodec.encode(text, ttlSeconds: 3600, password: password);
+      final decoded = SpoonCodec.decode(encoded.binary, password: password);
+      expect(decoded.success, isTrue);
+      expect(decoded.text, equals(text));
+    });
+
+    test('encode с паролем — неверный пароль возвращает wrong_password', () {
+      final encoded = SpoonCodec.encode('Secret', ttlSeconds: 3600, password: 'correct');
+      final decoded = SpoonCodec.decode(encoded.binary, password: 'wrong');
+      expect(decoded.success, isFalse);
+      expect(decoded.error, equals('wrong_password'));
+    });
+
+    test('encode с паролем — кириллица', () {
+      const text = 'Привет мир';
+      const password = 'пароль';
       final encoded = SpoonCodec.encode(text, ttlSeconds: 3600, password: password);
       final decoded = SpoonCodec.decode(encoded.binary, password: password);
       expect(decoded.success, isTrue);

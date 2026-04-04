@@ -2,17 +2,27 @@
 /// Порт Python core/codec.py на Dart
 library;
 
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'compiler.dart';
 import 'transcoder.dart';
 import 'interpreter.dart';
 import 'ttl.dart';
 
-/// Маркер сообщения с паролем.
-/// Если декодированный текст начинается с этого маркера —
-/// значит сообщение защищено паролем.
-const String passwordMarker = '\u{1F512}'; // 🔒
+/// Маркер защищённого сообщения — однобайтный SOH символ
+/// Никогда не встречается в реальном тексте пользователя
+const String passwordMarker = '\x01';
 
+/// Хэш пароля для проверки — простой но надёжный
+/// Возвращает число от 0 до 255
+int _passwordHash(String password) {
+  int hash = 7;
+  for (final char in password.codeUnits) {
+    hash = (hash * 31 + char) & 0xFF;
+  }
+  return hash;
+}
+
+@immutable
 class EncodeResult {
   final Uint8List binary;
   final String bfCode;
@@ -20,7 +30,7 @@ class EncodeResult {
   final DateTime expiresAt;
   final int sizeBytes;
 
-  EncodeResult({
+  const EncodeResult({
     required this.binary,
     required this.bfCode,
     required this.bfWithTtl,
@@ -29,13 +39,14 @@ class EncodeResult {
   });
 }
 
+@immutable
 class DecodeResult {
   final String text;
   final String bfCode;
   final bool success;
   final String? error;
 
-  DecodeResult({
+  const DecodeResult({
     required this.text,
     required this.bfCode,
     required this.success,
@@ -52,10 +63,17 @@ class SpoonCodec {
   }) {
     if (text.isEmpty) throw ArgumentError('Текст не может быть пустым');
 
-    // Добавить маркер если есть пароль
-    final actualText = password != null && password.isNotEmpty
-        ? passwordMarker + text
-        : text;
+    String actualText;
+    if (password != null && password.isNotEmpty) {
+      // Структура защищённого сообщения:
+      // \x01 + chr(hash) + text
+      // \x01 — маркер что сообщение защищено
+      // chr(hash) — хэш пароля для проверки
+      final hash = _passwordHash(password);
+      actualText = passwordMarker + String.fromCharCode(hash) + text;
+    } else {
+      actualText = text;
+    }
 
     final bfCode = BrainfuckCompiler.compileText(actualText);
     final (bfWithTtl, expiresAt) = wrapSimple(bfCode, ttlSeconds: ttlSeconds);
@@ -80,34 +98,13 @@ class SpoonCodec {
       final bfCode = SpoonTranscoder.decodeFromBin(data);
       final tokens = getAllValidTokens(timestamp: timestamp);
 
-      String resultText = '';
+      String rawText = '';
 
       for (final token in tokens) {
         try {
           final text = runBf(bfCode, stdin: token);
           if (text.isNotEmpty) {
-            if (text.startsWith(passwordMarker)) {
-              // Сообщение с паролем
-              if (password != null && password.isNotEmpty) {
-                for (final t in tokens) {
-                  try {
-                    final textWithPass = runBf(bfCode, stdin: t + password);
-                    if (textWithPass.isNotEmpty &&
-                        textWithPass.startsWith(passwordMarker)) {
-                      resultText =
-                          textWithPass.substring(passwordMarker.length);
-                      break;
-                    }
-                  } catch (_) {}
-                }
-              }
-              if (resultText.isEmpty) {
-                // Сигнал: нужен пароль
-                resultText = passwordMarker;
-              }
-            } else {
-              resultText = text;
-            }
+            rawText = text;
             break;
           }
         } catch (_) {
@@ -115,26 +112,63 @@ class SpoonCodec {
         }
       }
 
-      if (resultText.isEmpty) {
-        return DecodeResult(
+      if (rawText.isEmpty) {
+        return const DecodeResult(
           text: '',
-          bfCode: bfCode,
+          bfCode: '',
           success: false,
           error: 'TTL истёк',
         );
       }
 
-      if (resultText == passwordMarker) {
+      // Проверить структуру сообщения
+      if (rawText.startsWith(passwordMarker)) {
+        // Сообщение защищено паролем
+        if (rawText.length < 2) {
+          // Некорректная структура
+          return DecodeResult(
+            text: '',
+            bfCode: bfCode,
+            success: false,
+            error: 'password_required',
+          );
+        }
+
+        if (password == null || password.isEmpty) {
+          // Пароль не передан
+          return DecodeResult(
+            text: '',
+            bfCode: bfCode,
+            success: false,
+            error: 'password_required',
+          );
+        }
+
+        // Проверить хэш пароля
+        final storedHash = rawText.codeUnitAt(1);
+        final providedHash = _passwordHash(password);
+
+        if (storedHash != providedHash) {
+          // Неверный пароль
+          return DecodeResult(
+            text: '',
+            bfCode: bfCode,
+            success: false,
+            error: 'wrong_password',
+          );
+        }
+
+        // Верный пароль — вернуть текст без маркера и хэша
         return DecodeResult(
-          text: passwordMarker,
+          text: rawText.substring(2),
           bfCode: bfCode,
-          success: false,
-          error: 'password_required',
+          success: true,
         );
       }
 
+      // Обычное сообщение без пароля
       return DecodeResult(
-        text: resultText,
+        text: rawText,
         bfCode: bfCode,
         success: true,
       );

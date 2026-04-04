@@ -198,7 +198,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'spoon messenger v1.6.0',
+              'no spoon messenger v2.0.0',
               style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
             ),
             const SizedBox(height: 16),

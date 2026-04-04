@@ -59,7 +59,7 @@ class _MainScreenState extends State<MainScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.background,
         title: GlowText(
-          '> CREATE CIRCLE',
+          '> CREATE BOARD',
           style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
           glowColor: colors.primary,
         ),
@@ -67,7 +67,7 @@ class _MainScreenState extends State<MainScreen> {
           controller: nameController,
           style: GoogleFonts.vt323(color: colors.text, fontSize: 20),
           decoration: InputDecoration(
-            hintText: 'circle name_',
+            hintText: 'board name_',
             hintStyle: GoogleFonts.vt323(color: colors.textDim, fontSize: 20),
           ),
           autofocus: true,
@@ -107,7 +107,7 @@ class _MainScreenState extends State<MainScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.background,
         title: GlowText(
-          '> JOIN CIRCLE',
+          '> JOIN BOARD',
           style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
           glowColor: colors.primary,
         ),
@@ -118,7 +118,7 @@ class _MainScreenState extends State<MainScreen> {
               controller: keyController,
               style: GoogleFonts.vt323(color: colors.text, fontSize: 18),
               decoration: InputDecoration(
-                hintText: 'circle key_',
+                hintText: 'board key_',
                 hintStyle: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
               ),
             ),
@@ -127,7 +127,7 @@ class _MainScreenState extends State<MainScreen> {
               controller: nameController,
               style: GoogleFonts.vt323(color: colors.text, fontSize: 18),
               decoration: InputDecoration(
-                hintText: 'local name_',
+                hintText: 'board name_',
                 hintStyle: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
               ),
             ),

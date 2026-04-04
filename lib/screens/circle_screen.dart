@@ -9,6 +9,7 @@ import '../transport/circles_storage.dart';
 import '../transport/messenger.dart';
 import '../services/logger_service.dart';
 import '../services/sound_service.dart';
+import '../core/codec.dart';
 import 'compose_screen.dart';
 import 'ceremony_screen.dart';
 import 'qr_screen.dart';
@@ -67,9 +68,12 @@ class _CircleScreenState extends State<CircleScreen> {
     await SoundService().playModem();
 
     try {
-      logger.info('Loading feed for circle: ${widget.circle.key}');
+      logger.info('Loading feed for board: ${widget.circle.key}');
       final messages = await _messenger!.receive(widget.circle.key);
       logger.info('Feed loaded: ${messages.length} messages');
+
+      await SoundService().playClick();
+
       setState(() {
         _messages = messages;
         _loading = false;
@@ -90,7 +94,7 @@ class _CircleScreenState extends State<CircleScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.background,
         title: GlowText(
-          '> DELETE CIRCLE',
+          '> DELETE BOARD',
           style: GoogleFonts.vt323(fontSize: 22, color: Colors.red),
           glowColor: Colors.red,
         ),
@@ -361,15 +365,26 @@ class _CircleScreenState extends State<CircleScreen> {
     if (_messenger == null) return;
 
     setState(() => _loadingCid = msg.cid);
-    logger.info('Downloading message: ${msg.cid}');
+    logger.info('Downloading: ${msg.cid}');
 
-    await SoundService().playModem();
+    SoundService().playModem();
 
     try {
       final binary = await _messenger!.ipfs.download(msg.cid);
       logger.info('Downloaded ${binary.length} bytes');
+      SoundService().playClick();
 
       setState(() => _loadingCid = null);
+      if (!mounted) return;
+
+      // Быстрая проверка — нужен ли пароль
+      final quickCheck = SpoonCodec.decode(binary);
+      String? password;
+
+      if (quickCheck.error == 'password_required') {
+        password = await _showPasswordDialog();
+        if (password == null || password.isEmpty) return;
+      }
 
       if (mounted) {
         Navigator.push(
@@ -379,6 +394,7 @@ class _CircleScreenState extends State<CircleScreen> {
               binary: binary,
               theme: widget.theme,
               cid: msg.cid,
+              password: password,
             ),
           ),
         );
@@ -399,5 +415,63 @@ class _CircleScreenState extends State<CircleScreen> {
         );
       }
     }
+  }
+
+  Future<String?> _showPasswordDialog() async {
+    final colors = AppTheme.getColors(widget.theme);
+    final controller = TextEditingController();
+
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.background,
+        title: GlowText(
+          '> ACCESS RESTRICTED',
+          style: GoogleFonts.vt323(fontSize: 20, color: colors.primary),
+          glowColor: colors.primary,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'enter key to decrypt:',
+              style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              style: GoogleFonts.vt323(color: colors.text, fontSize: 20),
+              obscureText: true,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: '________',
+                hintStyle: GoogleFonts.vt323(
+                  color: colors.textDim, fontSize: 20,
+                ),
+              ),
+              onSubmitted: (_) => Navigator.pop(ctx, controller.text),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: Text(
+              'CANCEL',
+              style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, controller.text),
+            child: GlowText(
+              'DECRYPT',
+              style: GoogleFonts.vt323(fontSize: 18, color: colors.primary),
+              glowColor: colors.primary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

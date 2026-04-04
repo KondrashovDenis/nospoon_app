@@ -1,11 +1,17 @@
 /// Единый интерфейс цепочки кодирования
 /// Порт Python core/codec.py на Dart
+library;
 
 import 'dart:typed_data';
 import 'compiler.dart';
 import 'transcoder.dart';
 import 'interpreter.dart';
 import 'ttl.dart';
+
+/// Маркер сообщения с паролем.
+/// Если декодированный текст начинается с этого маркера —
+/// значит сообщение защищено паролем.
+const String passwordMarker = '\u{1F512}'; // 🔒
 
 class EncodeResult {
   final Uint8List binary;
@@ -46,13 +52,13 @@ class SpoonCodec {
   }) {
     if (text.isEmpty) throw ArgumentError('Текст не может быть пустым');
 
-    // Шаг 1: Text → BF
-    final bfCode = BrainfuckCompiler.compileText(text);
+    // Добавить маркер если есть пароль
+    final actualText = password != null && password.isNotEmpty
+        ? passwordMarker + text
+        : text;
 
-    // Шаг 2: BF + TTL
+    final bfCode = BrainfuckCompiler.compileText(actualText);
     final (bfWithTtl, expiresAt) = wrapSimple(bfCode, ttlSeconds: ttlSeconds);
-
-    // Шаг 3: BF → .bin
     final binary = SpoonTranscoder.encodeToBin(bfWithTtl);
 
     return EncodeResult(
@@ -71,46 +77,41 @@ class SpoonCodec {
     DateTime? timestamp,
   }) {
     try {
-      // Шаг 1: .bin → BF
       final bfCode = SpoonTranscoder.decodeFromBin(data);
-
       final tokens = getAllValidTokens(timestamp: timestamp);
 
       String resultText = '';
-      String lastError = '';
 
       for (final token in tokens) {
-        // Сначала пробуем БЕЗ пароля
         try {
           final text = runBf(bfCode, stdin: token);
           if (text.isNotEmpty) {
-            if (password != null) {
-              final textWithPass = runBf(bfCode, stdin: token + password);
-              if (textWithPass.isNotEmpty) {
-                resultText = textWithPass;
-                break;
+            if (text.startsWith(passwordMarker)) {
+              // Сообщение с паролем
+              if (password != null && password.isNotEmpty) {
+                for (final t in tokens) {
+                  try {
+                    final textWithPass = runBf(bfCode, stdin: t + password);
+                    if (textWithPass.isNotEmpty &&
+                        textWithPass.startsWith(passwordMarker)) {
+                      resultText =
+                          textWithPass.substring(passwordMarker.length);
+                      break;
+                    }
+                  } catch (_) {}
+                }
+              }
+              if (resultText.isEmpty) {
+                // Сигнал: нужен пароль
+                resultText = passwordMarker;
               }
             } else {
               resultText = text;
-              break;
             }
+            break;
           }
-        } catch (e) {
-          lastError = e.toString();
+        } catch (_) {
           continue;
-        }
-
-        // Пробуем с паролем если передан
-        if (password != null) {
-          try {
-            final text = runBf(bfCode, stdin: token + password);
-            if (text.isNotEmpty) {
-              resultText = text;
-              break;
-            }
-          } catch (e) {
-            lastError = e.toString();
-          }
         }
       }
 
@@ -119,9 +120,16 @@ class SpoonCodec {
           text: '',
           bfCode: bfCode,
           success: false,
-          error: lastError.isNotEmpty
-              ? lastError
-              : 'TTL истёк или неверный пароль',
+          error: 'TTL истёк',
+        );
+      }
+
+      if (resultText == passwordMarker) {
+        return DecodeResult(
+          text: passwordMarker,
+          bfCode: bfCode,
+          success: false,
+          error: 'password_required',
         );
       }
 
@@ -130,7 +138,6 @@ class SpoonCodec {
         bfCode: bfCode,
         success: true,
       );
-
     } on BrainfuckError catch (e) {
       return DecodeResult(
         text: '',

@@ -40,7 +40,7 @@ dependencies:
   google_fonts: ^6.1.0
   qr_flutter: ^4.1.0
   mobile_scanner: ^5.0.0
-  audioplayers: ^6.0.0
+  flutter_soloud: ^2.0.0
 
 dev_dependencies:
   flutter_test:

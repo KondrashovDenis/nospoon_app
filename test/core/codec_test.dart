@@ -38,5 +38,21 @@ void main() {
       final decoded = SpoonCodec.decode(encoded.binary, timestamp: pastTime);
       expect(decoded.success, isFalse);
     });
+
+    test('encode с паролем добавляет маркер', () {
+      final result = SpoonCodec.encode('Secret', ttlSeconds: 3600, password: 'key');
+      // Декодирование без пароля должно вернуть password_required
+      final decoded = SpoonCodec.decode(result.binary);
+      expect(decoded.error, equals('password_required'));
+    });
+
+    test('encode с паролем декодируется с правильным паролем', () {
+      const text = 'Secret';
+      const password = 'mykey';
+      final encoded = SpoonCodec.encode(text, ttlSeconds: 3600, password: password);
+      final decoded = SpoonCodec.decode(encoded.binary, password: password);
+      expect(decoded.success, isTrue);
+      expect(decoded.text, equals(text));
+    });
   });
 }

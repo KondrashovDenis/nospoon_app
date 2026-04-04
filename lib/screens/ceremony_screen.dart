@@ -1,7 +1,3 @@
-/// Церемония декодирования — главная фича приложения
-/// 4 экрана: биты → BF код → пароль → текст
-library;
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:typed_data';
@@ -11,18 +7,20 @@ import '../theme/crt_effects.dart';
 import '../core/codec.dart';
 import '../services/sound_service.dart';
 
-enum CeremonyStage { loading, bits, brainfuck, password, result, error }
+enum CeremonyStage { loading, bits, brainfuck, result, error }
 
 class CeremonyScreen extends StatefulWidget {
   final Uint8List binary;
   final SpoonTheme theme;
   final String? cid;
+  final String? password;
 
   const CeremonyScreen({
     super.key,
     required this.binary,
     required this.theme,
     this.cid,
+    this.password,
   });
 
   @override
@@ -37,10 +35,11 @@ class _CeremonyScreenState extends State<CeremonyScreen>
   String _displayText = '';
   String _errorMessage = '';
   String _bfCode = '';
-  final _passwordController = TextEditingController();
 
   late AnimationController _animController;
   Timer? _typeTimer;
+  final _scrollController = ScrollController();
+  final _bfScrollController = ScrollController();
 
   @override
   void initState() {
@@ -56,113 +55,126 @@ class _CeremonyScreenState extends State<CeremonyScreen>
   void dispose() {
     _animController.dispose();
     _typeTimer?.cancel();
-    _passwordController.dispose();
+    _scrollController.dispose();
+    _bfScrollController.dispose();
     super.dispose();
   }
 
   Future<void> _startCeremony() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 300));
     _showBits();
   }
 
-  /// Экран 1 — поток битов Spoon
   void _showBits() {
     setState(() => _stage = CeremonyStage.bits);
 
-    final fakeBits = List.generate(256, (i) =>
-      (i % 7 == 0) ? '0' : '1'
-    ).join();
+    final fakeBits = widget.binary
+        .map((b) => b.toRadixString(2).padLeft(8, '0'))
+        .join();
+    final displayBits = fakeBits.length > 512
+        ? fakeBits.substring(0, 512)
+        : fakeBits;
 
     int index = 0;
-    _typeTimer = Timer.periodic(const Duration(milliseconds: 16), (timer) {
-      if (index >= fakeBits.length) {
+    _typeTimer = Timer.periodic(const Duration(milliseconds: 12), (timer) {
+      if (index >= displayBits.length) {
         timer.cancel();
-        Future.delayed(const Duration(milliseconds: 800), _showBrainfuck);
+        Future.delayed(const Duration(milliseconds: 600), _showBrainfuck);
         return;
       }
+      final char = displayBits[index];
       setState(() {
-        _displayBits = fakeBits.substring(0, index + 1);
+        _displayBits = displayBits.substring(0, index + 1);
       });
-      index += 4;
+      if (index % 4 == 0) {
+        if (char == '0') {
+          SoundService().playBitZero();
+        } else {
+          SoundService().playBitOne();
+        }
+      }
+      index += 2;
     });
   }
 
-  /// Экран 2 — BF код
   void _showBrainfuck() {
     try {
-      final decoded = SpoonCodec.decode(widget.binary);
+      final decoded = SpoonCodec.decode(
+        widget.binary,
+        password: widget.password,
+      );
       _bfCode = decoded.bfCode;
     } catch (e) {
-      _bfCode = '+++[>++<-]>.[...]';
+      _bfCode = '+++[>++<-]>.';
     }
+
+    final displayBf = _bfCode.length > 2000
+        ? _bfCode.substring(0, 2000)
+        : _bfCode;
 
     setState(() {
       _stage = CeremonyStage.brainfuck;
       _displayBf = '';
     });
 
+    SoundService().resetPlusCount();
+    SoundService().resetMinusCount();
+
     int index = 0;
-    _typeTimer = Timer.periodic(const Duration(milliseconds: 20), (timer) {
-      if (index >= _bfCode.length) {
+    _typeTimer = Timer.periodic(const Duration(milliseconds: 8), (timer) {
+      if (index >= displayBf.length) {
         timer.cancel();
-        Future.delayed(
-          const Duration(milliseconds: 800),
-          _checkPassword,
-        );
+        Future.delayed(const Duration(milliseconds: 500), _decodeAndReveal);
         return;
       }
+
+      final char = displayBf[index];
       setState(() {
-        _displayBf = _bfCode.substring(0, index + 1);
+        _displayBf = displayBf.substring(0, index + 1);
       });
-      index += 3;
+
+      if (_bfScrollController.hasClients) {
+        _bfScrollController.animateTo(
+          _bfScrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 50),
+          curve: Curves.linear,
+        );
+      }
+
+      if (index % 3 == 0) {
+        switch (char) {
+          case '+': SoundService().playPlus();
+          case '-': SoundService().playMinus();
+          case '>': SoundService().playRight();
+          case '<': SoundService().playLeft();
+          case '[': SoundService().playLoopOpen();
+          case ']': SoundService().playLoopClose();
+          case '.': SoundService().playOutput();
+        }
+      }
+      index += 2;
     });
   }
 
-  /// Экран 3 — проверка пароля
-  void _checkPassword() {
-    final result = SpoonCodec.decode(widget.binary);
-    if (result.success) {
-      _revealText(result.text);
-    } else {
-      // Проверить — может это действительно пароль нужен
-      // или просто TTL не совпал
-      if (result.error != null &&
-          result.error!.contains('пароль')) {
-        // Показать экран пароля только если TTL совпал
-        // но результат пустой (значит пароль нужен)
-        setState(() {
-          _stage = CeremonyStage.password;
-        });
-      } else {
-        // TTL истёк
-        setState(() {
-          _errorMessage = 'TTL EXPIRED';
-          _stage = CeremonyStage.error;
-        });
-      }
-    }
-  }
-
-  void _submitPassword() {
-    final password = _passwordController.text;
-    if (password.isEmpty) return;
-
+  void _decodeAndReveal() {
     final result = SpoonCodec.decode(
       widget.binary,
-      password: password,
+      password: widget.password,
     );
 
-    if (result.success) {
+    if (result.success && result.text.isNotEmpty) {
       _revealText(result.text);
+    } else if (result.error == 'password_required' ||
+               (!result.success && widget.password != null)) {
+      _revealText('Enter password to see this message');
     } else {
       setState(() {
-        _errorMessage = 'ACCESS DENIED';
+        _errorMessage = 'TTL EXPIRED';
         _stage = CeremonyStage.error;
       });
     }
   }
 
-  /// Экран 4 — текст появляется посимвольно
   void _revealText(String text) {
     setState(() {
       _stage = CeremonyStage.result;
@@ -170,18 +182,16 @@ class _CeremonyScreenState extends State<CeremonyScreen>
     });
 
     int index = 0;
-    _typeTimer = Timer.periodic(const Duration(milliseconds: 60), (timer) {
+    _typeTimer = Timer.periodic(const Duration(milliseconds: 80), (timer) {
       if (index >= text.length) {
         timer.cancel();
+        SoundService().playSuccess();
         return;
       }
       setState(() {
         _displayText = text.substring(0, index + 1);
       });
-      // Звук печатной машинки каждые 3 символа
-      if (index % 3 == 0) {
-        SoundService().playTypewriter();
-      }
+      SoundService().playCharacter(text.codeUnitAt(index));
       index++;
     });
   }
@@ -217,8 +227,6 @@ class _CeremonyScreenState extends State<CeremonyScreen>
         return _buildBits(colors);
       case CeremonyStage.brainfuck:
         return _buildBrainfuck(colors);
-      case CeremonyStage.password:
-        return _buildPassword(colors);
       case CeremonyStage.result:
         return _buildResult(colors);
       case CeremonyStage.error:
@@ -265,10 +273,10 @@ class _CeremonyScreenState extends State<CeremonyScreen>
             '${widget.binary.length} bytes',
             style: GoogleFonts.vt323(color: colors.textDim, fontSize: 16),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Expanded(
             child: SingleChildScrollView(
-              reverse: false,
+              controller: _scrollController,
               child: Align(
                 alignment: Alignment.topLeft,
                 child: Text(
@@ -303,11 +311,10 @@ class _CeremonyScreenState extends State<CeremonyScreen>
             '${_bfCode.length} instructions',
             style: GoogleFonts.vt323(color: colors.textDim, fontSize: 16),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Expanded(
             child: SingleChildScrollView(
-              reverse: false,
-              controller: ScrollController(),
+              controller: _bfScrollController,
               child: Align(
                 alignment: Alignment.topLeft,
                 child: Row(
@@ -326,65 +333,6 @@ class _CeremonyScreenState extends State<CeremonyScreen>
                     BlinkingCursor(color: colors.cursor, fontSize: 16),
                   ],
                 ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPassword(dynamic colors) {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          GlowText(
-            '> ACCESS RESTRICTED',
-            style: GoogleFonts.vt323(fontSize: 24, color: colors.primary),
-            glowColor: colors.primary,
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'enter key to decrypt:',
-            style: GoogleFonts.vt323(color: colors.textDim, fontSize: 20),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                '> ',
-                style: GoogleFonts.vt323(color: colors.primary, fontSize: 24),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _passwordController,
-                  style: GoogleFonts.vt323(color: colors.text, fontSize: 24),
-                  obscureText: true,
-                  autofocus: true,
-                  decoration: InputDecoration(
-                    hintText: '________',
-                    hintStyle: GoogleFonts.vt323(
-                      color: colors.textDim, fontSize: 24,
-                    ),
-                    border: InputBorder.none,
-                  ),
-                  onSubmitted: (_) => _submitPassword(),
-                ),
-              ),
-              BlinkingCursor(color: colors.cursor, fontSize: 24),
-            ],
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _submitPassword,
-              child: Text(
-                '> DECRYPT',
-                style: GoogleFonts.vt323(fontSize: 22),
               ),
             ),
           ),
@@ -414,33 +362,28 @@ class _CeremonyScreenState extends State<CeremonyScreen>
           const SizedBox(height: 32),
           Expanded(
             child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '> ',
-                        style: GoogleFonts.vt323(
-                          color: colors.primary, fontSize: 28,
-                        ),
-                      ),
-                      Expanded(
-                        child: GlowText(
-                          _displayText,
-                          style: GoogleFonts.vt323(
-                            fontSize: 28,
-                            color: colors.primary,
-                            height: 1.4,
-                          ),
-                          glowColor: colors.primary,
-                          glowRadius: 12,
-                        ),
-                      ),
-                      BlinkingCursor(color: colors.cursor, fontSize: 28),
-                    ],
+                  Text(
+                    '> ',
+                    style: GoogleFonts.vt323(
+                      color: colors.primary, fontSize: 28,
+                    ),
                   ),
+                  Expanded(
+                    child: GlowText(
+                      _displayText,
+                      style: GoogleFonts.vt323(
+                        fontSize: 28,
+                        color: colors.primary,
+                        height: 1.4,
+                      ),
+                      glowColor: colors.primary,
+                      glowRadius: 12,
+                    ),
+                  ),
+                  BlinkingCursor(color: colors.cursor, fontSize: 28),
                 ],
               ),
             ),
@@ -457,10 +400,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
         children: [
           GlowText(
             _errorMessage,
-            style: GoogleFonts.vt323(
-              fontSize: 40,
-              color: Colors.red,
-            ),
+            style: GoogleFonts.vt323(fontSize: 40, color: Colors.red),
             glowColor: Colors.red,
           ),
           const SizedBox(height: 16),
@@ -476,10 +416,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
           const SizedBox(height: 32),
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              '> BACK',
-              style: GoogleFonts.vt323(fontSize: 20),
-            ),
+            child: Text('> BACK', style: GoogleFonts.vt323(fontSize: 20)),
           ),
         ],
       ),

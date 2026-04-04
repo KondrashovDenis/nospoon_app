@@ -81,7 +81,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '> circle: ${widget.circle.name}',
+                '> board: ${widget.circle.name}',
                 style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
               ),
               const SizedBox(height: 16),

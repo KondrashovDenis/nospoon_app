@@ -13,7 +13,11 @@
       "Bash(mkdir /tmp/empty_dir)",
       "Bash(powershell -Command ':*)",
       "Bash(powershell -Command \"[System.Environment]::SetEnvironmentVariable\\('GRADLE_USER_HOME', 'D:\\\\android_build', 'User'\\); Write-Host 'done'\")",
-      "Bash(flutter clean:*)"
+      "Bash(flutter clean:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(Get-Content C:\\\\Users\\\\denci\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--VS-projects-nospoon-app\\\\8ae3c7b5-a6a7-48d8-9013-037bd0dae2b2\\\\tasks\\\\bo8w6d662.output)",
+      "Bash(Select-String -Pattern \"Built|error|Error\")",
+      "Bash(Select-Object -Last 10)"
     ],
     "additionalDirectories": [
       "d:\\VS_projects\\nospoon_app\\lib"

@@ -29,7 +29,7 @@ class QrShowScreen extends StatelessWidget {
       backgroundColor: colors.background,
       appBar: AppBar(
         title: GlowText(
-          '> SHARE CIRCLE',
+          '> SHARE BOARD',
           style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
           glowColor: colors.primary,
         ),
@@ -57,7 +57,7 @@ class QrShowScreen extends StatelessWidget {
                   border: Border.all(color: colors.primary, width: 2),
                 ),
                 child: QrImageView(
-                  data: 'spoon://circle/${circle.key}',
+                  data: 'spoon://board/${circle.key}',
                   version: QrVersions.auto,
                   size: 220,
                   backgroundColor: Colors.white,
@@ -143,9 +143,9 @@ class _QrScanScreenState extends State<QrScanScreen> {
 
     final value = barcode!.rawValue!;
 
-    if (value.startsWith('spoon://circle/')) {
+    if (value.startsWith('spoon://board/') || value.startsWith('spoon://circle/')) {
       _scanned = true;
-      final key = value.replaceFirst('spoon://circle/', '');
+      final key = value.replaceFirst('spoon://board/', '').replaceFirst('spoon://circle/', '');
       await _scannerController.stop();
 
       if (mounted) {
@@ -164,7 +164,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: colors.background,
         title: GlowText(
-          '> CIRCLE FOUND',
+          '> BOARD FOUND',
           style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
           glowColor: colors.primary,
         ),
@@ -182,7 +182,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
               style: GoogleFonts.vt323(color: colors.text, fontSize: 20),
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'local name_',
+                hintText: 'board name_',
                 hintStyle: GoogleFonts.vt323(
                   color: colors.textDim, fontSize: 20,
                 ),
@@ -230,7 +230,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
       backgroundColor: colors.background,
       appBar: AppBar(
         title: GlowText(
-          '> SCAN CIRCLE',
+          '> SCAN BOARD',
           style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
           glowColor: colors.primary,
         ),
@@ -252,7 +252,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
             right: 0,
             child: Center(
               child: Text(
-                'scan circle QR code',
+                'scan board QR code',
                 style: GoogleFonts.vt323(
                   color: colors.primary,
                   fontSize: 20,

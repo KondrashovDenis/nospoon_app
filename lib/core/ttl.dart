@@ -12,7 +12,7 @@ int getTimeToken({DateTime? timestamp, int precision = ttlPrecision}) {
 (String, DateTime) wrapSimple(String bfCode, {int ttlSeconds = 3600}) {
   final now = DateTime.now();
   final expiresAt = now.add(Duration(seconds: ttlSeconds));
-  final currentToken = getTimeToken(timestamp: now);
+  final currentToken = getTimeToken(timestamp: now, precision: ttlSeconds);
   final tokenVal = currentToken % 256;
 
   final ttlWrapper = StringBuffer();
@@ -38,13 +38,13 @@ String getStdinToken({DateTime? timestamp}) {
 
 /// Получить все возможные токены для декодирования
 /// Проверяем ±2 периода на случай расхождения часов
-List<String> getAllValidTokens({DateTime? timestamp}) {
+List<String> getAllValidTokens({DateTime? timestamp, int precision = ttlPrecision}) {
   final t = timestamp ?? DateTime.now();
-  final current = getTimeToken(timestamp: t);
+  final current = getTimeToken(timestamp: t, precision: precision);
 
   final tokens = <String>[];
   for (int delta = -2; delta <= 2; delta++) {
-    final token = (current + delta) % 256;
+    final token = ((current + delta) % 256 + 256) % 256;
     final char = String.fromCharCode(token);
     if (!tokens.contains(char)) {
       tokens.add(char);

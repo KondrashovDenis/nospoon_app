@@ -96,19 +96,23 @@ class SpoonCodec {
   }) {
     try {
       final bfCode = SpoonTranscoder.decodeFromBin(data);
-      final tokens = getAllValidTokens(timestamp: timestamp);
+      final precisions = [3600, 6 * 3600, 24 * 3600, 7 * 24 * 3600];
 
       String rawText = '';
 
-      for (final token in tokens) {
-        try {
-          final text = runBf(bfCode, stdin: token);
-          if (text.isNotEmpty) {
-            rawText = text;
-            break;
+      outer:
+      for (final precision in precisions) {
+        final tokens = getAllValidTokens(timestamp: timestamp, precision: precision);
+        for (final token in tokens) {
+          try {
+            final text = runBf(bfCode, stdin: token);
+            if (text.isNotEmpty) {
+              rawText = text;
+              break outer;
+            }
+          } catch (_) {
+            continue;
           }
-        } catch (_) {
-          continue;
         }
       }
 

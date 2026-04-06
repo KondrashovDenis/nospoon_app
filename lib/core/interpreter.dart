@@ -30,8 +30,9 @@ class BrainfuckInterpreter {
 
     final bracketMap = _buildBracketMap(bfCode);
 
-    // stdin как байты для корректной работы с UTF-8 токенами
-    final stdinBytes = utf8.encode(stdin);
+    // stdin как сырые code units (0-255), не UTF-8
+    // utf8.encode(char(134)) = [194, 134] — первый байт не равен 134
+    final stdinBytes = stdin.codeUnits;
 
     while (pc < bfCode.length) {
       final cmd = bfCode[pc];

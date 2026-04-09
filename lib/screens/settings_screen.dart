@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../screens/logs_screen.dart';
 import '../services/sound_service.dart';
+import '../services/notification_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   final SpoonTheme theme;
@@ -45,6 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _glow;
   late bool _flicker;
   late bool _sound;
+  bool _notifications = false;
 
   @override
   void initState() {
@@ -54,13 +56,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _glow = widget.glow;
     _flicker = widget.flicker;
     _sound = widget.sound;
-    _loadSound();
+    _loadSettings();
   }
 
-  Future<void> _loadSound() async {
+  Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
+    final notifEnabled = await NotificationService.isEnabled();
     setState(() {
       _sound = prefs.getBool('sound') ?? false;
+      _notifications = notifEnabled;
     });
   }
 
@@ -189,6 +193,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildToggle('SOUND', _sound, colors, (v) {
               setState(() => _sound = v);
               _saveSound(v);
+            }),
+            _buildToggle('NOTIFICATIONS', _notifications, colors, (v) {
+              setState(() => _notifications = v);
+              NotificationService.setEnabled(v);
             }),
 
             const SizedBox(height: 24),

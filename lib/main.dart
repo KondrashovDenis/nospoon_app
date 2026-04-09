@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'theme/app_theme.dart';
 import 'screens/main_screen.dart';
+import 'screens/onboarding_screen.dart';
 import 'services/sound_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +24,7 @@ class _SpoonAppState extends State<SpoonApp> {
   bool _glow = true;
   bool _flicker = false;
   bool _initialized = false;
+  bool _showOnboarding = false;
 
   @override
   void initState() {
@@ -32,11 +35,13 @@ class _SpoonAppState extends State<SpoonApp> {
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await SoundService().init();
+    await NotificationService.init();
     setState(() {
       _theme = SpoonTheme.values[prefs.getInt('theme') ?? 0];
       _scanlines = prefs.getBool('scanlines') ?? true;
       _glow = prefs.getBool('glow') ?? true;
       _flicker = prefs.getBool('flicker') ?? false;
+      _showOnboarding = !(prefs.getBool('onboarding_done') ?? false);
       _initialized = true;
     });
   }
@@ -58,7 +63,15 @@ class _SpoonAppState extends State<SpoonApp> {
       title: 'Spoon Messenger',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.getTheme(_theme),
-      home: MainScreen(
+      home: _showOnboarding
+          ? OnboardingScreen(
+              onComplete: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('onboarding_done', true);
+                setState(() => _showOnboarding = false);
+              },
+            )
+          : MainScreen(
         theme: _theme,
         scanlines: _scanlines,
         glow: _glow,

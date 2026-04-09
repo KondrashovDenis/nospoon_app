@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>no spoon messenger</title>
+<meta name="description" content="there is no server. no identity. no trace. only the message.">
+<meta property="og:title" content="no spoon messenger">
+<meta property="og:description" content="there is no server. no identity. no trace. only the message.">
+<meta property="og:url" content="https://nospoon.ru">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --g: #00FF41;
+  --gd: #00cc33;
+  --dim: rgba(0,255,65,0.52);
+  --bdr: rgba(0,255,65,0.22);
+  --bg: #000;
+  --f: 'VT323', monospace;
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--g); font-family: var(--f); font-size: 20px; line-height: 1.5; overflow-x: hidden; }
+body::after { content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px); pointer-events:none; z-index:9999; }
+#mc { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; opacity:.16; }
+.wrap { position:relative; z-index:1; max-width:860px; margin:0 auto; padding:0 24px; }
+
+/* NAV */
+nav { position:fixed; top:0; left:0; right:0; z-index:100; border-bottom:1px solid var(--bdr); background:rgba(0,0,0,.92); backdrop-filter:blur(4px); }
+nav .ni { max-width:860px; margin:0 auto; padding:0 24px; height:52px; display:flex; align-items:center; justify-content:space-between; }
+.logo { font-size:22px; letter-spacing:2px; }
+.logo em { color:var(--dim); font-style:normal; }
+.nr { display:flex; align-items:center; gap:24px; }
+.nl { display:flex; gap:22px; }
+.nl a { color:var(--dim); text-decoration:none; font-size:18px; letter-spacing:1px; transition:color .15s; }
+.nl a:hover { color:var(--g); }
+.ls { display:flex; border:1px solid var(--bdr); overflow:hidden; }
+.lb { font-family:var(--f); font-size:16px; padding:4px 12px; background:transparent; color:var(--dim); border:none; cursor:pointer; letter-spacing:1px; transition:all .15s; }
+.lb.on { background:var(--g); color:#000; }
+.lb:not(.on):hover { color:var(--g); }
+
+/* HERO */
+#hero { min-height:100vh; display:flex; flex-direction:column; justify-content:center; padding-top:52px; position:relative; z-index:1; }
+.ht { font-size:clamp(40px,8vw,72px); line-height:1.1; margin-bottom:12px; text-shadow:0 0 40px rgba(0,255,65,.32); animation:flk 9s infinite; }
+@keyframes flk { 0%,94%,96%,98%,100%{opacity:1} 95%{opacity:.68} 97%{opacity:.82} 99%{opacity:.58} }
+.hg { font-size:clamp(17px,2.6vw,25px); color:var(--dim); margin-bottom:38px; letter-spacing:1px; line-height:1.85; }
+.hg .a { color:var(--g); }
+.hb { display:flex; flex-wrap:wrap; gap:9px; margin-bottom:38px; }
+.badge { border:1px solid var(--bdr); padding:3px 11px; font-size:14px; letter-spacing:1px; color:var(--dim); }
+.hc { display:flex; flex-wrap:wrap; gap:12px; }
+.btn { font-family:var(--f); font-size:20px; letter-spacing:2px; padding:9px 24px; cursor:pointer; text-decoration:none; display:inline-block; border:1px solid var(--bdr); background:transparent; color:var(--g); transition:all .15s; }
+.btn:hover { border-color:var(--g); }
+.btn.p { background:var(--g); color:#000; border-color:var(--g); }
+.btn.p:hover { background:var(--gd); border-color:var(--gd); }
+.vt { margin-top:52px; font-size:16px; color:var(--dim); letter-spacing:1px; }
+.cur { display:inline-block; width:10px; height:18px; background:var(--g); margin-left:2px; vertical-align:middle; animation:blk 1s step-end infinite; }
+@keyframes blk { 50%{opacity:0} }
+
+/* SECTIONS */
+section { padding:84px 0; position:relative; z-index:1; }
+.slbl { font-size:14px; letter-spacing:3px; color:var(--dim); margin-bottom:5px; }
+.stit { font-size:clamp(25px,3.8vw,37px); margin-bottom:42px; line-height:1.1; }
+hr.dv { border:none; border-top:1px solid var(--bdr); position:relative; z-index:1; }
+
+/* PIPELINE */
+.pipe { display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:26px 0 34px; font-size:17px; }
+.ps { border:1px solid var(--bdr); padding:4px 13px; letter-spacing:1px; white-space:nowrap; }
+.pa { color:var(--dim); font-size:19px; }
+
+/* CHAIN */
+.chain { display:flex; flex-direction:column; }
+.ci { display:grid; grid-template-columns:42px 1fr; gap:14px; padding:20px 0; border-bottom:1px solid var(--bdr); }
+.ci:last-child { border-bottom:none; }
+.cn { font-size:28px; color:var(--dim); padding-top:2px; }
+.cc h3 { font-size:20px; margin-bottom:4px; letter-spacing:1px; }
+.cc p { font-size:17px; color:var(--dim); line-height:1.5; }
+.cc code { font-family:var(--f); font-size:16px; color:var(--gd); background:rgba(0,255,65,.07); padding:1px 5px; }
+
+/* FEATURES */
+.fgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1px; background:var(--bdr); border:1px solid var(--bdr); }
+.feat { background:var(--bg); padding:24px 20px; }
+.fic { font-size:19px; margin-bottom:9px; color:var(--dim); letter-spacing:2px; }
+.feat h3 { font-size:19px; margin-bottom:6px; letter-spacing:1px; }
+.feat p { font-size:16px; color:var(--dim); line-height:1.5; }
+
+/* DEMO */
+.dw { border:1px solid var(--bdr); padding:26px; background:rgba(0,255,65,.015); }
+.dw textarea { width:100%; background:transparent; border:1px solid var(--bdr); color:var(--g); font-family:var(--f); font-size:20px; padding:9px 13px; resize:vertical; min-height:72px; outline:none; margin-bottom:14px; }
+.dw textarea:focus { border-color:var(--g); }
+.dw textarea::placeholder { color:var(--dim); }
+.dc { display:flex; gap:11px; flex-wrap:wrap; align-items:center; margin-bottom:20px; }
+.dlbl { font-size:13px; letter-spacing:2px; color:var(--dim); margin-bottom:5px; }
+.dcode { font-family:var(--f); font-size:15px; color:var(--gd); word-break:break-all; line-height:1.8; max-height:140px; overflow-y:auto; padding:9px 11px; border:1px solid var(--bdr); background:rgba(0,255,65,.03); margin-top:4px; }
+.dstat { display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; font-size:15px; color:var(--dim); letter-spacing:1px; }
+.dstat b { color:var(--g); }
+.dc2 { display:inline-block; animation:chi .03s ease forwards; opacity:0; }
+@keyframes chi { to{opacity:1} }
+
+/* DASHBOARD */
+.dash { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; background:var(--bdr); border:1px solid var(--bdr); margin-bottom:16px; }
+.dk { background:var(--bg); padding:20px 16px; text-align:center; }
+.dv { font-size:50px; line-height:1; margin-bottom:5px; }
+.dl { font-size:13px; letter-spacing:2px; color:var(--dim); }
+.dst { font-size:14px; color:var(--dim); letter-spacing:1px; text-align:right; }
+.dot { display:inline-block; width:7px; height:7px; background:var(--g); border-radius:50%; margin-right:5px; animation:pls 2s infinite; }
+@keyframes pls { 0%,100%{opacity:1} 50%{opacity:.22} }
+
+/* MANIFESTO */
+.mani { font-size:clamp(19px,2.7vw,29px); line-height:1.75; color:var(--dim); }
+.mani .ln { display:block; transition:color .4s; }
+.mani .ln.lit { color:var(--g); }
+
+/* DOWNLOAD */
+.dgrid { display:grid; grid-template-columns:repeat(auto-fit,minmax(185px,1fr)); gap:13px; }
+.dc3 { border:1px solid var(--bdr); padding:20px; text-decoration:none; color:var(--g); display:block; transition:border-color .15s,background .15s; cursor:pointer; }
+.dc3:not(.off):hover { border-color:var(--g); background:rgba(0,255,65,.04); }
+.dc3.off { opacity:.36; cursor:default; }
+.dc3 h3 { font-size:20px; margin-bottom:4px; letter-spacing:1px; }
+.dc3 p { font-size:15px; color:var(--dim); line-height:1.4; }
+.dtag { display:inline-block; margin-top:9px; font-size:13px; padding:2px 8px; border:1px solid var(--bdr); color:var(--dim); letter-spacing:1px; }
+
+/* MODAL */
+.mo { display:none; position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:500; align-items:center; justify-content:center; }
+.mo.open { display:flex; }
+.mb { border:1px solid var(--g); background:#000; padding:36px 32px; max-width:460px; width:90%; position:relative; text-align:center; }
+.mb h2 { font-size:30px; margin-bottom:14px; letter-spacing:2px; }
+.mb p { font-size:18px; color:var(--dim); margin-bottom:10px; line-height:1.5; }
+.mv { font-size:15px; color:var(--dim); margin-bottom:26px; letter-spacing:1px; }
+.mlinks { display:flex; flex-direction:column; gap:9px; }
+.ml { font-family:var(--f); font-size:18px; letter-spacing:1px; padding:9px 18px; border:1px solid var(--bdr); color:var(--g); text-decoration:none; transition:border-color .15s; display:block; }
+.ml:not(.mg):hover { border-color:var(--g); }
+.mg { opacity:.38; cursor:default; pointer-events:none; }
+.mx { position:absolute; top:12px; right:16px; font-family:var(--f); font-size:20px; color:var(--dim); background:none; border:none; cursor:pointer; }
+.mx:hover { color:var(--g); }
+
+/* FOOTER */
+footer { position:relative; z-index:1; border-top:1px solid var(--bdr); padding:40px 0; }
+footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-wrap:wrap; justify-content:space-between; gap:20px; align-items:flex-end; }
+.flo { font-size:22px; letter-spacing:2px; margin-bottom:5px; }
+.fm { font-size:15px; color:var(--dim); line-height:1.6; }
+.fll { display:flex; gap:18px; flex-wrap:wrap; justify-content:flex-end; margin-bottom:6px; }
+.fll a { font-size:16px; color:var(--dim); text-decoration:none; letter-spacing:1px; }
+.fll a:hover { color:var(--g); }
+
+@media(max-width:600px){
+  .nl { display:none; }
+  .dw { padding:16px 13px; }
+  .mb { padding:24px 16px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="mc"></canvas>
+
+<!-- MODAL -->
+<div class="mo" id="dlm" onclick="if(event.target===this)cm()">
+  <div class="mb">
+    <button class="mx" onclick="cm()">[ X ]</button>
+    <h2 data-en="[ DOWNLOAD ]" data-ru="[ СКАЧАТЬ ]">[ DOWNLOAD ]</h2>
+    <p data-en="APK release is coming soon. Follow the repo to get notified when it drops."
+       data-ru="APK релиз скоро выйдет. Следи за репозиторием — уведомим когда выйдет."></p>
+    <div class="mv">v2.1.1-dev · android · flutter</div>
+    <div class="mlinks">
+      <a class="ml" href="https://github.com/KondrashovDenis/nospoon_app" target="_blank" rel="noopener"
+         data-en="[ WATCH REPO → GITHUB ]" data-ru="[ СЛЕДИТЬ → GITHUB ]">[ WATCH REPO → GITHUB ]</a>
+      <a class="ml" href="https://github.com/KondrashovDenis/nospoon" target="_blank" rel="noopener"
+         data-en="[ TRY PYTHON CLI ]" data-ru="[ PYTHON CLI → ПОПРОБОВАТЬ ]">[ TRY PYTHON CLI ]</a>
+      <a class="ml mg" data-en="[ GOOGLE PLAY — coming soon ]" data-ru="[ GOOGLE PLAY — скоро ]">[ GOOGLE PLAY — coming soon ]</a>
+      <a class="ml mg" data-en="[ TESTFLIGHT — coming soon ]" data-ru="[ TESTFLIGHT — скоро ]">[ TESTFLIGHT — coming soon ]</a>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="ni">
+    <div class="logo"><img src="logo_ooo.jpg" alt="no spoon logo" style="height:28px;width:28px;object-fit:contain;vertical-align:middle;margin-right:6px;border-radius:4px;"> <em>no</em>spoon</div>
+    <div class="nr">
+      <div class="nl">
+        <a href="#how"      data-en="how"     data-ru="как">how</a>
+        <a href="#demo"     data-en="demo"    data-ru="демо">demo</a>
+        <a href="#network"  data-en="network" data-ru="сеть">network</a>
+        <a href="#download" data-en="get it"  data-ru="скачать">get it</a>
+      </div>
+      <div class="ls">
+        <button class="lb on" onclick="sl('en')">EN</button>
+        <button class="lb"    onclick="sl('ru')">RU</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="wrap">
+    <div class="ht" data-en="there is no spoon." data-ru="ложки не существует.">there is no spoon.</div>
+    <div class="hg">
+      <span class="a" data-en="no server." data-ru="нет сервера.">no server.</span>
+      <span data-en=" no identity." data-ru=" нет личности."> no identity.</span>
+      <span data-en=" no trace." data-ru=" нет следа."> no trace.</span><br>
+      <span class="a" data-en="only the message." data-ru="только сообщение.">only the message.</span>
+    </div>
+    <div class="hb">
+      <span class="badge" data-en="ESOLANG MESSENGER" data-ru="ЭЗОЛЭНГ МЕССЕНДЖЕР">ESOLANG MESSENGER</span>
+      <span class="badge" data-en="NO CENTRAL SERVER" data-ru="БЕЗ СЕРВЕРА">NO CENTRAL SERVER</span>
+      <span class="badge" data-en="SELF-DESTRUCTING" data-ru="САМОУНИЧТОЖЕНИЕ">SELF-DESTRUCTING</span>
+      <span class="badge">BRAINFUCK / SPOON</span>
+      <span class="badge">OPEN SOURCE</span>
+    </div>
+    <div class="hc">
+      <button class="btn p" onclick="om()" data-en="[ GET APK ]" data-ru="[ СКАЧАТЬ APK ]">[ GET APK ]</button>
+      <a href="#demo" class="btn" data-en="[ TRY DEMO ]" data-ru="[ ДЕМО ]">[ TRY DEMO ]</a>
+      <a href="https://github.com/KondrashovDenis/nospoon_app" class="btn" target="_blank" rel="noopener">[ GITHUB ]</a>
+    </div>
+    <div class="vt">v2.1.1 · flutter · ipfs · cloudflare workers<span class="cur"></span></div>
+  </div>
+</section>
+
+<hr class="dv">
+
+<!-- HOW -->
+<section id="how">
+  <div class="wrap">
+    <div class="slbl" data-en="# HOW_IT_WORKS" data-ru="# КАК_ЭТО_РАБОТАЕТ"># HOW_IT_WORKS</div>
+    <div class="stit" data-en="messages are programs." data-ru="сообщения — это программы.">messages are programs.</div>
+    <div class="pipe">
+      <span class="ps">text</span><span class="pa">→</span>
+      <span class="ps">brainfuck</span><span class="pa">→</span>
+      <span class="ps">spoon</span><span class="pa">→</span>
+      <span class="ps">.bin</span><span class="pa">→</span>
+      <span class="ps">ipfs</span><span class="pa">→</span>
+      <span class="ps">relay</span>
+    </div>
+    <div class="chain">
+      <div class="ci"><div class="cn">01</div><div class="cc">
+        <h3 data-en="write a message" data-ru="написать сообщение">write a message</h3>
+        <p data-en="up to 350 characters. pick a board, set TTL (1h / 6h / 24h / 7d), optionally add a password. everything happens locally — no server involved."
+           data-ru="до 350 символов. выбери доску, TTL (1ч / 6ч / 24ч / 7д), опционально пароль. всё локально — сервер не участвует.">up to 350 characters. pick a board, set TTL (1h / 6h / 24h / 7d), optionally add a password. everything happens locally — no server involved.</p>
+      </div></div>
+      <div class="ci"><div class="cn">02</div><div class="cc">
+        <h3 data-en="compiled to an executable" data-ru="компилируется в исполняемый файл">compiled to an executable</h3>
+        <p data-en="your text becomes a Brainfuck program, binary-encoded into Spoon. result: a .bin file — a self-contained executable program."
+           data-ru="текст компилируется в Brainfuck, затем кодируется в Spoon. результат — файл .bin: самодостаточная исполняемая программа.">your text becomes a <code>Brainfuck</code> program, binary-encoded into <code>Spoon</code>. result: a <code>.bin</code> — a self-contained executable.</p>
+      </div></div>
+      <div class="ci"><div class="cn">03</div><div class="cc">
+        <h3 data-en="uploaded to ipfs" data-ru="загружается в ipfs">uploaded to ipfs</h3>
+        <p data-en="the .bin is pinned to IPFS via Pinata. you get a CID hash. nobody controls it. no server stores your text."
+           data-ru="файл .bin закрепляется в IPFS через Pinata. ты получаешь CID-хэш. никто им не управляет. текст нигде не хранится.">the <code>.bin</code> is pinned to IPFS via Pinata. you get a CID hash. nobody controls it. no server stores your text.</p>
+      </div></div>
+      <div class="ci"><div class="cn">04</div><div class="cc">
+        <h3 data-en="the ceremony" data-ru="церемония">the ceremony</h3>
+        <p data-en="the recipient watches the .bin execute live: bits stream with modem sounds, Brainfuck interpreter runs, then your message appears character by character — each one a unique tone. final chord: C5→E5→G5."
+           data-ru="получатель наблюдает выполнение .bin: поток битов со звуком модема, интерпретатор Brainfuck, затем сообщение посимвольно — каждый символ — уникальный тон. финальный аккорд: C5→E5→G5.">the recipient watches the <code>.bin</code> execute live: bits → brainfuck → text, char by char. each symbol plays a unique tone. final chord: C5→E5→G5.</p>
+      </div></div>
+      <div class="ci"><div class="cn">05</div><div class="cc">
+        <h3 data-en="self-destructs" data-ru="самоуничтожается">self-destructs</h3>
+        <p data-en="TTL is baked into the program via system time. after the window closes the program stops producing output. the file exists — the message is gone."
+           data-ru="TTL зашит в программу через системное время. после истечения окна программа перестаёт выводить результат. файл есть — сообщения нет.">TTL baked into the program via system time. after the window closes, program stops producing output. file exists — message is gone.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<hr class="dv">
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <div class="slbl" data-en="# FEATURES" data-ru="# ВОЗМОЖНОСТИ"># FEATURES</div>
+    <div class="stit" data-en="architecture is the feature." data-ru="архитектура — это и есть фича.">architecture is the feature.</div>
+    <div class="fgrid">
+      <div class="feat"><div class="fic">[ _ ]</div>
+        <h3 data-en="no accounts" data-ru="нет аккаунтов">no accounts</h3>
+        <p data-en="no registration, no email, no phone. boards are 16-char random keys you share yourself."
+           data-ru="никакой регистрации, почты, телефона. доски — 16-символьные ключи, которые ты передаёшь сам.">no registration, no email, no phone. boards are 16-char random keys you share yourself.</p>
+      </div>
+      <div class="feat"><div class="fic">/dev/null</div>
+        <h3 data-en="no server" data-ru="нет сервера">no server</h3>
+        <p data-en="encode/decode on device only. the relay passes CID hashes — never message content."
+           data-ru="кодирование/декодирование только на устройстве. relay передаёт CID-хэши — не содержимое.">encode/decode on device only. the relay passes CID hashes — never message content.</p>
+      </div>
+      <div class="feat"><div class="fic">⧗ TTL</div>
+        <h3 data-en="self-destruct" data-ru="самоуничтожение">self-destruct</h3>
+        <p data-en="expiry embedded in the Brainfuck program. 1h / 6h / 24h / 7d. no deletion needed."
+           data-ru="срок зашит в BF-программу. 1ч / 6ч / 24ч / 7д. никакого удаления.">expiry embedded in the Brainfuck program. 1h / 6h / 24h / 7d. no deletion needed.</p>
+      </div>
+      <div class="feat"><div class="fic">hash(∗)</div>
+        <h3 data-en="password layer" data-ru="защита паролем">password layer</h3>
+        <p data-en="hash baked into the binary. no password = no message. relay never sees content."
+           data-ru="хэш зашит в бинарник. нет пароля — нет сообщения. relay не видит содержимого.">hash baked into the binary. no password = no message. relay never sees content.</p>
+      </div>
+      <div class="feat"><div class="fic">+→[.-]</div>
+        <h3 data-en="esolang aesthetic" data-ru="эзолэнг эстетика">esolang aesthetic</h3>
+        <p data-en="messages are real Brainfuck/Spoon programs. decoding is a live interpreter ceremony with modem sounds."
+           data-ru="сообщения — настоящие программы на BF/Spoon. декодирование — живая церемония с интерпретатором.">messages are real Brainfuck/Spoon programs. decoding is a live interpreter ceremony with modem sounds.</p>
+      </div>
+      <div class="feat"><div class="fic">▓▒░ CRT</div>
+        <h3 data-en="terminal ui" data-ru="терминальный ui">terminal ui</h3>
+        <p data-en="VT323 font, scanlines, phosphor glow. 4 themes: phosphor green / amber / cyan / paper white."
+           data-ru="шрифт VT323, сканлайны, фосфорное свечение. 4 темы: зелёный / янтарь / циан / белый.">VT323 font, scanlines, phosphor glow. 4 themes: phosphor green / amber / cyan / paper white.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="dv">
+
+<!-- DEMO -->
+<section id="demo">
+  <div class="wrap">
+    <div class="slbl" data-en="# LIVE_DEMO" data-ru="# ЖИВОЕ_ДЕМО"># LIVE_DEMO</div>
+    <div class="stit" data-en="compile a message." data-ru="скомпилируй сообщение.">compile a message.</div>
+    <p style="color:var(--dim);margin-bottom:26px;font-size:18px;"
+       data-en="type anything. watch it become Brainfuck. runs entirely in your browser — no data sent."
+       data-ru="напиши что угодно. смотри как это становится Brainfuck. работает в браузере — данные не отправляются.">type anything. watch it become Brainfuck. runs entirely in your browser — no data sent.</p>
+    <div class="dw">
+      <textarea id="dt" maxlength="120"
+        data-en-ph="type your message here..."
+        data-ru-ph="напиши сообщение здесь..."
+        placeholder="type your message here..."></textarea>
+      <div class="dc">
+        <button class="btn p" onclick="rd()" style="font-size:18px;"
+          data-en="[ COMPILE ]" data-ru="[ КОМПИЛИРОВАТЬ ]">[ COMPILE ]</button>
+        <span style="font-size:15px;color:var(--dim);letter-spacing:1px;" id="dcc">0 / 120</span>
+      </div>
+      <div id="dow" style="display:none">
+        <div class="dlbl" data-en="// BRAINFUCK OUTPUT" data-ru="// ВЫВОД BRAINFUCK">// BRAINFUCK OUTPUT</div>
+        <div class="dcode" id="dbf"></div>
+        <div class="dstat">
+          <span data-en="chars" data-ru="символов">chars</span>: <b id="sc">0</b>
+          &nbsp;&nbsp;
+          <span data-en="bf ops" data-ru="bf операций">bf ops</span>: <b id="so">0</b>
+          &nbsp;&nbsp;
+          <span data-en="spoon bits" data-ru="биты spoon">spoon bits</span>: <b id="sb">0</b>
+          &nbsp;&nbsp;
+          <span data-en="bin" data-ru="bin">bin</span>: <b id="sz">0</b>B
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="dv">
+
+<!-- NETWORK -->
+<section id="network">
+  <div class="wrap">
+    <div class="slbl" data-en="# NETWORK_STATUS" data-ru="# СТАТУС_СЕТИ"># NETWORK_STATUS</div>
+    <div class="stit" data-en="the network is alive." data-ru="сеть живёт.">the network is alive.</div>
+    <div class="dash">
+      <div class="dk"><div class="dv" id="sdn">27</div><div class="dl" data-en="DOWNLOADS" data-ru="СКАЧИВАНИЙ">DOWNLOADS</div></div>
+      <div class="dk"><div class="dv" id="sdb">54</div><div class="dl" data-en="BOARDS" data-ru="ДОСОК">BOARDS</div></div>
+      <div class="dk"><div class="dv" id="sdm">108</div><div class="dl" data-en="MESSAGES" data-ru="СООБЩЕНИЙ">MESSAGES</div></div>
+    </div>
+    <div class="dst"><span class="dot"></span><span id="rst" data-en="connecting to relay..." data-ru="подключение к relay...">connecting to relay...</span></div>
+  </div>
+</section>
+
+<hr class="dv">
+
+<!-- PHILOSOPHY -->
+<section id="philosophy">
+  <div class="wrap">
+    <div class="slbl" data-en="# PHILOSOPHY" data-ru="# ФИЛОСОФИЯ"># PHILOSOPHY</div>
+    <div class="mani" id="mani">
+      <span class="ln" data-en="&ldquo;there is no spoon.&rdquo;" data-ru="«ложки не существует.»">"there is no spoon."</span>
+      <span class="ln" data-en="— the matrix, 1999." data-ru="— матрица, 1999.">— the matrix, 1999.</span>
+      <span class="ln">&nbsp;</span>
+      <span class="ln" data-en="messages are not data." data-ru="сообщения — это не данные.">messages are not data.</span>
+      <span class="ln" data-en="they are programs that run once" data-ru="это программы, которые запускаются один раз">they are programs that run once</span>
+      <span class="ln" data-en="and then forget themselves." data-ru="и потом забывают себя.">and then forget themselves.</span>
+      <span class="ln">&nbsp;</span>
+      <span class="ln" data-en="there is no server." data-ru="нет сервера.">there is no server.</span>
+      <span class="ln" data-en="there is no identity." data-ru="нет личности.">there is no identity.</span>
+      <span class="ln" data-en="there is no trace." data-ru="нет следа.">there is no trace.</span>
+      <span class="ln" data-en="only the message." data-ru="только сообщение.">only the message.</span>
+    </div>
+  </div>
+</section>
+
+<hr class="dv">
+
+<!-- DOWNLOAD -->
+<section id="download">
+  <div class="wrap">
+    <div class="slbl" data-en="# GET_IT" data-ru="# ПОЛУЧИТЬ"># GET_IT</div>
+    <div class="stit" data-en="run the spoon." data-ru="запусти ложку.">run the spoon.</div>
+    <div class="dgrid">
+      <div class="dc3" onclick="om()">
+        <h3 data-en="android apk" data-ru="android apk">android apk</h3>
+        <p data-en="direct install, no google play. APK dropping soon on github releases."
+           data-ru="прямая установка, без google play. APK скоро появится в github releases.">direct install, no google play. APK dropping soon on github releases.</p>
+        <span class="dtag" data-en="COMING SOON" data-ru="СКОРО">COMING SOON</span>
+      </div>
+      <a class="dc3" href="https://github.com/KondrashovDenis/nospoon_app" target="_blank" rel="noopener">
+        <h3 data-en="source code" data-ru="исходный код">source code</h3>
+        <p data-en="flutter + dart. build for android, ios, windows, macos."
+           data-ru="flutter + dart. собери для android, ios, windows, macos.">flutter + dart. android · ios · windows · macos.</p>
+        <span class="dtag">GITHUB · MIT</span>
+      </a>
+      <a class="dc3" href="https://github.com/KondrashovDenis/nospoon" target="_blank" rel="noopener">
+        <h3 data-en="python cli" data-ru="python cli">python cli</h3>
+        <p data-en="core codec. test the full chain: text → .bin → decode."
+           data-ru="ядро codec. полная цепочка: текст → .bin → декодирование.">core codec. test the full chain: text → .bin → decode.</p>
+        <span class="dtag">GITHUB · PYTHON</span>
+      </a>
+      <div class="dc3 off">
+        <h3 data-en="ios / testflight" data-ru="ios / testflight">ios / testflight</h3>
+        <p data-en="planned. requires apple developer account."
+           data-ru="запланировано. требует аккаунт apple developer.">planned. requires apple developer account.</p>
+        <span class="dtag" data-en="PLANNED" data-ru="ЗАПЛАНИРОВАНО">PLANNED</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="fi">
+    <div>
+      <div class="flo"><img src="logo_ooo.jpg" alt="no spoon logo" style="height:26px;width:26px;object-fit:contain;vertical-align:middle;margin-right:6px;border-radius:4px;"> nospoon</div>
+      <div class="fm">
+        <span data-en="v2.1.1 · art project · educational experiment" data-ru="v2.1.1 · арт-проект · образовательный эксперимент">v2.1.1 · art project · educational experiment</span><br>
+        <span data-en="not a tool for crime. a love letter to esoteric languages." data-ru="не инструмент для криминала. признание в любви к эзотерическим языкам.">not a tool for crime. a love letter to esoteric languages.</span>
+      </div>
+    </div>
+    <div>
+      <div class="fll">
+        <a href="https://github.com/KondrashovDenis/nospoon_app" target="_blank" rel="noopener">github app</a>
+        <a href="https://github.com/KondrashovDenis/nospoon" target="_blank" rel="noopener">github py</a>
+        <a href="https://reddit.com/r/esolangs" target="_blank" rel="noopener">r/esolangs</a>
+      </div>
+      <div style="font-size:14px;color:var(--dim);text-align:right;"><img src="logo_ooo.jpg" alt="" style="height:16px;width:16px;object-fit:contain;vertical-align:middle;margin-right:4px;border-radius:2px;"> there is no spoon.</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* MATRIX RAIN */
+(function(){
+  const c=document.getElementById('mc'),ctx=c.getContext('2d');
+  const CH='+-><[].,+-><[]01.,+-><[].,+><';
+  const FS=16; let cols,dr;
+  function rz(){c.width=innerWidth;c.height=innerHeight;cols=Math.floor(c.width/FS);dr=new Array(cols).fill(1);}
+  rz(); window.addEventListener('resize',rz);
+  setInterval(function(){
+    ctx.fillStyle='rgba(0,0,0,.055)'; ctx.fillRect(0,0,c.width,c.height);
+    ctx.font=FS+'px "VT323",monospace';
+    for(let i=0;i<dr.length;i++){
+      const ch=CH[Math.floor(Math.random()*CH.length)];
+      ctx.globalAlpha=.62+Math.random()*.38;
+      ctx.fillStyle=Math.random()>.94?'#fff':'#00FF41';
+      ctx.fillText(ch,i*FS,dr[i]*FS);
+      if(dr[i]*FS>c.height&&Math.random()>.975)dr[i]=0;
+      dr[i]++;
+    }
+    ctx.globalAlpha=1;
+  },50);
+})();
+
+/* i18n */
+var lang='en';
+function sl(l){
+  lang=l;
+  document.querySelectorAll('.lb').forEach(b=>b.classList.toggle('on',b.textContent.toLowerCase()===l));
+  document.querySelectorAll('[data-'+l+']').forEach(el=>{ el.innerHTML=el.getAttribute('data-'+l); });
+  document.querySelectorAll('textarea[data-'+l+'-ph]').forEach(t=>{ t.placeholder=t.getAttribute('data-'+l+'-ph'); });
+}
+
+/* MODAL */
+function om(){ document.getElementById('dlm').classList.add('open'); }
+function cm(){ document.getElementById('dlm').classList.remove('open'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape')cm(); });
+
+/* BF COMPILER */
+function toBF(text){
+  var bytes=[];
+  for(var i=0;i<text.length;i++){
+    var cp=text.codePointAt(i);
+    if(cp>0xFFFF)i++;
+    if(cp<0x80){bytes.push(cp);}
+    else if(cp<0x800){bytes.push(0xC0|(cp>>6));bytes.push(0x80|(cp&0x3F));}
+    else if(cp<0x10000){bytes.push(0xE0|(cp>>12));bytes.push(0x80|((cp>>6)&0x3F));bytes.push(0x80|(cp&0x3F));}
+    else{bytes.push(0xF0|(cp>>18));bytes.push(0x80|((cp>>12)&0x3F));bytes.push(0x80|((cp>>6)&0x3F));bytes.push(0x80|(cp&0x3F));}
+  }
+  var bf='',cell=0;
+  for(var j=0;j<bytes.length;j++){
+    var a=bytes[j];
+    if(a===cell){bf+='.';}
+    else{
+      var f=Math.round(Math.sqrt(a));
+      if(f>=2&&a%f===0){
+        var m=a/f; bf+='>>'+'+'.repeat(f)+'[<'+'+'.repeat(m)+'>-]<[-].';
+      } else {
+        var b=f,r=a-b*b;
+        if(b>=2){
+          bf+='>>'+'+'.repeat(b)+'[<'+'+'.repeat(b)+'>-]<';
+          if(r>0)bf+='+'.repeat(r); else if(r<0)bf+='-'.repeat(-r);
+          bf+='[-].';
+        } else { bf+='[-]'+'+'.repeat(a)+'.'; }
+      }
+      cell=a;
+    }
+  }
+  return bf;
+}
+var SP={'+':'010','-':'011','>':'001','<':'000','[':'111',']':'110','.':'101',',':'100'};
+function bits(bf){ return [...bf].map(c=>SP[c]||'').join(''); }
+
+var dt=document.getElementById('dt'),dcc=document.getElementById('dcc');
+dt.addEventListener('input',function(){dcc.textContent=this.value.length+' / 120';});
+
+function rd(){
+  var txt=dt.value.trim(); if(!txt)return;
+  var bf=toBF(txt),b=bits(bf);
+  document.getElementById('sc').textContent=txt.length;
+  document.getElementById('so').textContent=bf.length;
+  document.getElementById('sb').textContent=b.length;
+  document.getElementById('sz').textContent=Math.ceil(b.length/8);
+  document.getElementById('dow').style.display='block';
+  var el=document.getElementById('dbf'); el.innerHTML='';
+  var d=bf.length>900?bf.slice(0,900)+'…':bf;
+  var clr={'+':'#00cc33','-':'#cc3300','>':'#33aacc','<':'#aa33cc','[':'#ccaa00',']':'#ccaa00','.':'#eee',',':'#888'};
+  var i=0;
+  function step(){
+    if(i>=d.length)return;
+    var s=document.createElement('span');
+    s.textContent=d[i]; s.style.color=clr[d[i]]||'#00FF41';
+    s.style.animationDelay=(i*5)+'ms'; s.className='dc2';
+    el.appendChild(s); i++;
+    if(i<d.length)requestAnimationFrame(step);
+  }
+  step();
+}
+dt.addEventListener('keydown',function(e){ if((e.ctrlKey||e.metaKey)&&e.key==='Enter')rd(); });
+
+/* DASHBOARD */
+var SEED={dl:27,bd:54,ms:108};
+function cu(el,to,ms){
+  var step=Math.ceil(to/36),cur=0;
+  var t=setInterval(function(){
+    cur=Math.min(cur+step,to); el.textContent=cur;
+    if(cur>=to)clearInterval(t);
+  },ms/36);
+}
+cu(document.getElementById('sdn'),SEED.dl,1100);
+cu(document.getElementById('sdb'),SEED.bd,1300);
+cu(document.getElementById('sdm'),SEED.ms,1500);
+
+(async function(){
+  var rst=document.getElementById('rst');
+  var RELAY='https://spoon-messenger-relay.nonospoon.workers.dev';
+  try{
+    var r=await fetch(RELAY+'/stats',{signal:AbortSignal.timeout(6000)});
+    if(r.ok){
+      var d=await r.json();
+      if(d.boards)  document.getElementById('sdb').textContent=SEED.bd+(d.boards||0);
+      if(d.messages)document.getElementById('sdm').textContent=SEED.ms+(d.messages||0);
+      rst.innerHTML=lang==='ru'
+        ?'relay онлайн · '+RELAY.replace('https://','')
+        :'relay online · '+RELAY.replace('https://','');
+    } else throw 0;
+  } catch(e){
+    rst.textContent=lang==='ru'?'relay · нет данных':'relay · no live data';
+    rst.style.color='rgba(0,255,65,.28)';
+  }
+})();
+
+/* MANIFESTO SCROLL */
+(function(){
+  var lines=document.querySelectorAll('#mani .ln');
+  function upd(){ lines.forEach(function(l){ l.classList.toggle('lit',l.getBoundingClientRect().top<innerHeight*.66); }); }
+  window.addEventListener('scroll',upd,{passive:true}); upd();
+})();
+</script>
+</body>
+</html>

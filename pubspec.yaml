@@ -41,17 +41,24 @@ dependencies:
   qr_flutter: ^4.1.0
   mobile_scanner: ^5.0.0
   flutter_soloud: ^2.0.0
+  flutter_local_notifications: ^18.0.0
+  workmanager: ^0.5.2
+  permission_handler: ^11.3.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.0
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo_ooo_trsp.png"
+  windows:
+    generate: true
+    image_path: "assets/images/logo_ooo_trsp.png"
+    icon_size: 256
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -66,6 +73,7 @@ flutter:
 
   assets:
     - assets/sounds/
+    - assets/images/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

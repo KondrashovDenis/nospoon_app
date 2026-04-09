@@ -6,6 +6,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../transport/circles_storage.dart';
+import '../transport/relay_client.dart';
+import '../transport/messenger.dart';
 import 'circle_screen.dart';
 import 'settings_screen.dart';
 import 'qr_screen.dart';
@@ -38,16 +40,31 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   List<Circle> _circles = [];
+  NetworkStats? _stats;
+  bool _statsLoading = true;
+  String? _statsError;
 
   @override
   void initState() {
     super.initState();
     _loadCircles();
+    _loadStats();
   }
 
   Future<void> _loadCircles() async {
     final circles = await CirclesStorage.getAll();
     setState(() => _circles = circles);
+  }
+
+  Future<void> _loadStats() async {
+    setState(() { _statsLoading = true; _statsError = null; });
+    try {
+      final messenger = await SpoonMessenger.create();
+      final stats = await messenger.getStats();
+      if (mounted) setState(() { _stats = stats; _statsLoading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _statsError = 'no live data'; _statsLoading = false; });
+    }
   }
 
   Future<void> _createCircle() async {
@@ -167,8 +184,15 @@ class _MainScreenState extends State<MainScreen> {
       appBar: AppBar(
         title: Row(
           children: [
+            Image.asset(
+              'assets/images/logo_ooo.jpg',
+              height: 24,
+              width: 24,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 6),
             GlowText(
-              '🥄 NO SPOON APP',
+              'NO SPOON APP',
               style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
               glowColor: colors.primary,
             ),
@@ -204,9 +228,16 @@ class _MainScreenState extends State<MainScreen> {
         scanlines: widget.scanlines,
         glow: widget.glow,
         flicker: widget.flicker,
-        child: _circles.isEmpty
-            ? _buildEmpty(colors)
-            : _buildCircleList(colors),
+        child: Column(
+          children: [
+            Expanded(
+              child: _circles.isEmpty
+                  ? _buildEmpty(colors)
+                  : _buildCircleList(colors),
+            ),
+            _buildStatsBar(colors),
+          ],
+        ),
       ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
@@ -238,6 +269,37 @@ class _MainScreenState extends State<MainScreen> {
             backgroundColor: colors.dim,
             child: Icon(Icons.add, color: colors.primary),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatsBar(dynamic colors) {
+    final dimStyle = GoogleFonts.vt323(fontSize: 14, color: colors.textDim);
+    final valStyle = GoogleFonts.vt323(fontSize: 16, color: colors.primary);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colors.secondary, width: 0.5)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.circle, size: 6,
+            color: _statsError != null ? colors.textDim : colors.primary),
+          const SizedBox(width: 6),
+          if (_statsLoading)
+            Text('relay...', style: dimStyle)
+          else if (_statsError != null)
+            Text('relay · $_statsError', style: dimStyle)
+          else ...[
+            Text('relay online', style: dimStyle),
+            const Spacer(),
+            Text('MSG ', style: dimStyle),
+            Text('${_stats?.totalMessages ?? 0}', style: valStyle),
+          ],
+          if (_statsError != null || _statsLoading)
+            const Spacer(),
         ],
       ),
     );

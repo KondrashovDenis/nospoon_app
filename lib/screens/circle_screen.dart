@@ -76,13 +76,18 @@ class _CircleScreenState extends State<CircleScreen> {
       SoundService().stopModemLoop();
       await SoundService().playClick();
 
+      // Фильтровать истёкшие сообщения (TTL)
+      final active = messages.where((m) => m.error != 'TTL истёк').toList();
+
+      if (!mounted) return;
       setState(() {
-        _messages = messages;
+        _messages = active;
         _loading = false;
       });
     } catch (e) {
       SoundService().stopModemLoop();
       logger.error('Feed load error: $e');
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _loading = false;

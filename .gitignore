@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Claude local settings
+.claude/
+
+# Working notes (local only)
+STATUS_*.md
+NOTES_*.md

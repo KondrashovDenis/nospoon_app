@@ -1,46 +1,59 @@
-// Cloudflare Workers relay клиент
-// Публикация и получение CID по ключу круга
+/// Клиент relay (Cloudflare Worker), протокол v2.
+///
+/// Через relay идёт всё: публикация, лента, скачивание. Ключей хранилища
+/// в приложении нет. Доска адресуется хешем ключа — см. MessageEnvelope.boardId.
+library;
 
-import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:http/http.dart' as http;
 
 class RelayError implements Exception {
   final String message;
   RelayError(this.message);
+
   @override
   String toString() => 'RelayError: $message';
 }
 
-class CircleEntry {
+class FeedEntry {
   final String cid;
-  final int publishedAt;
-  final int? expiresAt;
 
-  CircleEntry({
+  /// Время публикации и истечения по часам relay, мс.
+  final int publishedAt;
+  final int expiresAt;
+
+  FeedEntry({
     required this.cid,
     required this.publishedAt,
-    this.expiresAt,
+    required this.expiresAt,
   });
 
-  factory CircleEntry.fromJson(Map<String, dynamic> json) {
-    return CircleEntry(
+  factory FeedEntry.fromJson(Map<String, dynamic> json) {
+    return FeedEntry(
       cid: json['cid'] as String,
       publishedAt: json['published_at'] as int,
-      expiresAt: json['expires_at'] as int?,
+      expiresAt: json['expires_at'] as int,
     );
   }
 }
 
 class NetworkStats {
   final int totalMessages;
+  final int boards;
   final int updatedAt;
 
-  NetworkStats({required this.totalMessages, required this.updatedAt});
+  NetworkStats({
+    required this.totalMessages,
+    required this.boards,
+    required this.updatedAt,
+  });
 
   factory NetworkStats.fromJson(Map<String, dynamic> json) {
     return NetworkStats(
       totalMessages: json['total_messages'] as int? ?? 0,
+      boards: json['boards'] as int? ?? 0,
       updatedAt: json['updated_at'] as int? ?? 0,
     );
   }
@@ -48,100 +61,98 @@ class NetworkStats {
 
 class RelayClient {
   final String relayUrl;
+  final http.Client _http;
 
-  RelayClient({required this.relayUrl});
+  RelayClient({required this.relayUrl, http.Client? client})
+      : _http = client ?? http.Client();
 
-  /// Опубликовать CID в круг
-  Future<bool> publish(
-    String circleKey,
-    String cid, {
-    int? expiresAt,
+  /// Опубликовать конверт на доске. Возвращает запись ленты с CID.
+  Future<FeedEntry> publish(
+    String boardId,
+    Uint8List envelope, {
+    required int ttlSeconds,
   }) async {
-    try {
-      final url = '$relayUrl/circle/$circleKey/publish';
-      final body = <String, dynamic>{'cid': cid};
-      // убрать expires_at — Worker некорректно обрабатывает
-      // if (expiresAt != null) body['expires_at'] = expiresAt;
-
-      debugPrint('=== RELAY PUBLISH ===');
-      debugPrint('url: $url');
-      debugPrint('body: ${jsonEncode(body)}');
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 10));
-
-      debugPrint('status: ${response.statusCode}');
-      debugPrint('response: ${response.body}');
-
-      if (response.statusCode != 200) {
-        throw RelayError('Ошибка публикации: ${response.statusCode} ${response.body}');
-      }
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return json['success'] as bool? ?? false;
-
-    } catch (e) {
-      debugPrint('=== RELAY PUBLISH ERROR ===');
-      debugPrint(e.toString());
-      if (e is RelayError) rethrow;
-      throw RelayError('Ошибка публикации CID: $e');
-    }
+    final response = await _send(
+      () => _http
+          .post(
+            Uri.parse('$relayUrl/v2/board/$boardId/publish?ttl=$ttlSeconds'),
+            headers: {'Content-Type': 'application/octet-stream'},
+            body: envelope,
+          )
+          .timeout(const Duration(seconds: 40)),
+    );
+    _check(response);
+    return FeedEntry.fromJson(_json(response));
   }
 
-  /// Получить список CID для круга
-  Future<List<CircleEntry>> getFeed(String circleKey) async {
-    try {
-      final url = '$relayUrl/circle/$circleKey/feed';
-
-      debugPrint('=== RELAY GET FEED ===');
-      debugPrint('url: $url');
-
-      final response = await http.get(
-        Uri.parse(url),
-      ).timeout(const Duration(seconds: 10));
-
-      debugPrint('status: ${response.statusCode}');
-      debugPrint('response: ${response.body}');
-
-      if (response.statusCode != 200) {
-        throw RelayError('Ошибка получения feed: ${response.statusCode}');
-      }
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      final entries = json['entries'] as List<dynamic>? ?? [];
-
-      debugPrint('entries count: ${entries.length}');
-
-      return entries
-          .map((e) => CircleEntry.fromJson(e as Map<String, dynamic>))
-          .toList();
-
-    } catch (e) {
-      debugPrint('=== RELAY GET FEED ERROR ===');
-      debugPrint(e.toString());
-      if (e is RelayError) rethrow;
-      throw RelayError('Ошибка получения feed: $e');
-    }
+  /// Активные сообщения доски, новые первыми.
+  Future<List<FeedEntry>> getFeed(String boardId) async {
+    final response = await _send(
+      () => _http
+          .get(Uri.parse('$relayUrl/v2/board/$boardId/feed'))
+          .timeout(const Duration(seconds: 15)),
+    );
+    _check(response);
+    final entries = _json(response)['entries'] as List<dynamic>? ?? [];
+    return entries
+        .map((e) => FeedEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
-  /// Получить статистику сети
+  /// Скачать конверт сообщения.
+  Future<Uint8List> download(String boardId, String cid) async {
+    final response = await _send(
+      () => _http
+          .get(Uri.parse('$relayUrl/v2/board/$boardId/blob/$cid'))
+          .timeout(const Duration(seconds: 30)),
+    );
+    _check(response);
+    return response.bodyBytes;
+  }
+
   Future<NetworkStats> getStats() async {
+    final response = await _send(
+      () => _http
+          .get(Uri.parse('$relayUrl/stats'))
+          .timeout(const Duration(seconds: 10)),
+    );
+    _check(response);
+    return NetworkStats.fromJson(_json(response));
+  }
+
+  Future<http.Response> _send(Future<http.Response> Function() request) async {
     try {
-      final url = '$relayUrl/stats';
-      final response = await http.get(
-        Uri.parse(url),
-      ).timeout(const Duration(seconds: 10));
+      return await request();
+    } catch (_) {
+      throw RelayError('relay unreachable');
+    }
+  }
 
-      if (response.statusCode != 200) {
-        throw RelayError('Ошибка получения stats: ${response.statusCode}');
-      }
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      return NetworkStats.fromJson(json);
+  void _check(http.Response response) {
+    if (response.statusCode == 200) return;
 
-    } catch (e) {
-      if (e is RelayError) rethrow;
-      throw RelayError('Ошибка получения stats: $e');
+    String? code;
+    try {
+      code = (jsonDecode(response.body) as Map<String, dynamic>)['error']
+          as String?;
+    } catch (_) {
+      // тело не JSON — покажем только статус
+    }
+
+    throw RelayError(switch (code) {
+      'rate_limited' => 'too many requests, wait a minute',
+      'too_large' => 'message too large',
+      'not_found' => 'message expired or not found',
+      'storage_not_configured' || 'storage_error' => 'storage unavailable',
+      _ => 'relay error ${response.statusCode}',
+    });
+  }
+
+  Map<String, dynamic> _json(http.Response response) {
+    try {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw RelayError('bad relay response');
     }
   }
 }

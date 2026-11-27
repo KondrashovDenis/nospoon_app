@@ -254,35 +254,35 @@ class _ComposeScreenState extends State<ComposeScreen> {
   Future<void> _send() async {
     if (_textController.text.isEmpty) return;
 
+    if (_usePassword && _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'enter a password or uncheck the box',
+            style: GoogleFonts.vt323(fontSize: 16),
+          ),
+          backgroundColor: Colors.red.withValues(alpha: 0.3),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _sending = true;
-      _status = 'encoding...';
+      _status = 'encrypting...';
     });
 
     try {
-      final messenger = widget.messenger ?? await SpoonMessenger.create();
-
-      setState(() => _status = 'uploading to ipfs...');
-
-      debugPrint('=== SENDING ===');
-      debugPrint('text: ${_textController.text}');
-      debugPrint('circle: ${widget.circle.key}');
-      debugPrint('ttl: $_ttl');
+      final messenger = widget.messenger ?? SpoonMessenger.create();
 
       final result = await messenger.send(
         _textController.text,
         widget.circle.key,
         ttlSeconds: _ttlOptions[_ttl] ?? 86400,
-        password: _usePassword && _passwordController.text.isNotEmpty
-            ? _passwordController.text
-            : null,
+        password: _usePassword ? _passwordController.text : null,
       );
 
-      debugPrint('=== SEND RESULT ===');
-      debugPrint('cid: ${result.cid}');
-      debugPrint('expires: ${result.expiresAt}');
-      debugPrint('size: ${result.sizeBytes}');
-
+      if (!mounted) return;
       setState(() {
         _sending = false;
         _status = '';
@@ -302,6 +302,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
         Navigator.pop(context);
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _sending = false;
         _status = '';

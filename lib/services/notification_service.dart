@@ -54,6 +54,12 @@ class NotificationService {
     if (!_isMobile) return;
 
     if (enabled) {
+      // Android 13+: без явного разрешения уведомления не показываются
+      await _notifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+
       await Workmanager().registerPeriodicTask(
         _bgTaskUnique,
         _bgTaskName,
@@ -80,15 +86,16 @@ class NotificationService {
       final circles = await CirclesStorage.getAll();
       if (circles.isEmpty) return;
 
-      final messenger = await SpoonMessenger.create();
+      final messenger = SpoonMessenger.create();
 
       for (final circle in circles) {
         try {
-          final messages = await messenger.receive(circle.key);
+          // Только метаданные ленты: содержимое в фоне не качаем и не расшифровываем
+          final messages = await messenger.feed(circle.key);
           final lastChecked = prefs.getInt('last_check_${circle.key}') ?? 0;
 
           final newMessages = messages.where(
-            (m) => m.publishedAt > lastChecked && m.success,
+            (m) => m.publishedAt > lastChecked,
           ).toList();
 
           if (newMessages.isNotEmpty) {
@@ -106,11 +113,11 @@ class NotificationService {
             await prefs.setInt('last_check_${circle.key}', latest);
           }
         } catch (e) {
-          debugPrint('Notification check error for ${circle.name}: $e');
+          if (kDebugMode) debugPrint('Notification check error: $e');
         }
       }
     } catch (e) {
-      debugPrint('Notification check error: $e');
+      if (kDebugMode) debugPrint('Notification check error: $e');
     }
   }
 

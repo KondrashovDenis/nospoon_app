@@ -1,16 +1,18 @@
-/// Экран круга — реальная лента посланий
+/// Экран доски — лента посланий
 library;
+
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../core/envelope.dart';
 import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../transport/circles_storage.dart';
 import '../transport/messenger.dart';
+import '../transport/relay_client.dart';
 import '../services/logger_service.dart';
 import '../services/sound_service.dart';
-import 'dart:typed_data';
-import '../core/codec.dart';
 import 'compose_screen.dart';
 import 'ceremony_screen.dart';
 import 'qr_screen.dart';
@@ -36,31 +38,20 @@ class CircleScreen extends StatefulWidget {
 }
 
 class _CircleScreenState extends State<CircleScreen> {
-  List<ReceivedMessage> _messages = [];
+  final SpoonMessenger _messenger = SpoonMessenger.create();
+  List<FeedEntry> _messages = [];
   bool _loading = false;
   String? _error;
-  SpoonMessenger? _messenger;
   String? _loadingCid;
+  String _loadingLabel = '';
 
   @override
   void initState() {
     super.initState();
-    _initMessenger();
-  }
-
-  Future<void> _initMessenger() async {
-    try {
-      _messenger = await SpoonMessenger.create();
-      logger.info('Messenger initialized for circle: ${widget.circle.key}');
-      _loadFeed();
-    } catch (e) {
-      logger.error('Messenger init error: $e');
-      setState(() => _error = 'Messenger init error: $e');
-    }
+    _loadFeed();
   }
 
   Future<void> _loadFeed() async {
-    if (_messenger == null) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -69,19 +60,15 @@ class _CircleScreenState extends State<CircleScreen> {
     SoundService().startModemLoop();
 
     try {
-      logger.info('Loading feed for board: ${widget.circle.key}');
-      final messages = await _messenger!.receive(widget.circle.key);
+      final messages = await _messenger.feed(widget.circle.key);
       logger.info('Feed loaded: ${messages.length} messages');
 
       SoundService().stopModemLoop();
       await SoundService().playClick();
 
-      // Фильтровать истёкшие сообщения (TTL)
-      final active = messages.where((m) => m.error != 'TTL истёк').toList();
-
       if (!mounted) return;
       setState(() {
-        _messages = active;
+        _messages = messages;
         _loading = false;
       });
     } catch (e) {
@@ -180,7 +167,7 @@ class _CircleScreenState extends State<CircleScreen> {
             heroTag: 'delete_circle',
             onPressed: _deleteCircle,
             backgroundColor: colors.dim,
-            child: Icon(Icons.delete_outline, color: Colors.red),
+            child: const Icon(Icons.delete_outline, color: Colors.red),
           ),
           const SizedBox(height: 12),
           FloatingActionButton(
@@ -289,7 +276,21 @@ class _CircleScreenState extends State<CircleScreen> {
     );
   }
 
-  Widget _buildMessageTile(ReceivedMessage msg, dynamic colors) {
+  String _remaining(int expiresAtMs) {
+    final left = DateTime.fromMillisecondsSinceEpoch(expiresAtMs)
+        .difference(DateTime.now());
+    if (left.isNegative) return 'expired';
+    if (left.inDays > 0) {
+      return 'expires in ${left.inDays}d ${left.inHours % 24}h';
+    }
+    if (left.inHours > 0) {
+      return 'expires in ${left.inHours}h ${left.inMinutes % 60}m';
+    }
+    final minutes = left.inMinutes < 1 ? 1 : left.inMinutes;
+    return 'expires in ${minutes}m';
+  }
+
+  Widget _buildMessageTile(FeedEntry msg, dynamic colors) {
     final publishedAt = DateTime.fromMillisecondsSinceEpoch(msg.publishedAt);
     final timeStr =
         '${publishedAt.hour.toString().padLeft(2, '0')}:'
@@ -300,15 +301,13 @@ class _CircleScreenState extends State<CircleScreen> {
     final isLoading = _loadingCid == msg.cid;
 
     return GestureDetector(
-      onTap: isLoading ? null : () => _openCeremony(msg),
+      onTap: _loadingCid != null ? null : () => _openCeremony(msg),
       behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(
-            color: msg.success ? colors.secondary : colors.dim,
-          ),
+          border: Border.all(color: colors.secondary),
           color: colors.dim,
         ),
         child: Row(
@@ -320,31 +319,19 @@ class _CircleScreenState extends State<CircleScreen> {
                   Text(
                     '> ${msg.cid.substring(0, 20)}...',
                     style: GoogleFonts.vt323(
-                      color: msg.success ? colors.primary : colors.textDim,
+                      color: colors.primary,
                       fontSize: 18,
                     ),
                   ),
                   const SizedBox(height: 4),
-                  if (isLoading)
-                    Row(
-                      children: [
-                        Text(
-                          'Loading message...',
-                          style: GoogleFonts.vt323(
-                            color: colors.textDim, fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Text(
-                      'tap to decode',
-                      style: GoogleFonts.vt323(
-                        color: colors.textDim, fontSize: 16,
-                      ),
-                    ),
                   Text(
-                    timeStr,
+                    isLoading ? _loadingLabel : 'tap to decode',
+                    style: GoogleFonts.vt323(
+                      color: colors.textDim, fontSize: 16,
+                    ),
+                  ),
+                  Text(
+                    '$timeStr · ${_remaining(msg.expiresAt)}',
                     style: GoogleFonts.vt323(
                       color: colors.textDim, fontSize: 14,
                     ),
@@ -369,108 +356,100 @@ class _CircleScreenState extends State<CircleScreen> {
     );
   }
 
-  Future<void> _openCeremony(ReceivedMessage msg) async {
-    if (_messenger == null) return;
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.vt323(fontSize: 16)),
+        backgroundColor: Colors.red.withValues(alpha: 0.3),
+        duration: const Duration(seconds: 5),
+      ),
+    );
+  }
 
-    setState(() => _loadingCid = msg.cid);
-    logger.info('Downloading: ${msg.cid}');
+  Future<void> _openCeremony(FeedEntry msg) async {
+    setState(() {
+      _loadingCid = msg.cid;
+      _loadingLabel = 'loading message...';
+    });
 
     SoundService().startModemLoop();
 
     try {
-      final binary = await _messenger!.ipfs.download(msg.cid);
-      logger.info('Downloaded ${binary.length} bytes');
+      final blob = await _messenger.download(widget.circle.key, msg.cid);
+      logger.info('Downloaded ${blob.length} bytes');
 
       SoundService().stopModemLoop();
       await SoundService().playClick();
-
-      setState(() => _loadingCid = null);
       if (!mounted) return;
 
-      // Диагностика пароля
-      final quickCheck = SpoonCodec.decode(binary);
-      logger.info('quickCheck.success: ${quickCheck.success}');
-      logger.info('quickCheck.error: ${quickCheck.error}');
-      logger.info('quickCheck.text length: ${quickCheck.text.length}');
-      if (quickCheck.text.isNotEmpty) {
-        final preview = quickCheck.text.codeUnits
-            .take(10)
-            .map((c) => '0x${c.toRadixString(16)}')
-            .join(' ');
-        logger.info('quickCheck.text bytes: $preview');
-      }
+      final opened = await _openEnvelope(blob);
+      if (!mounted) return;
+      setState(() => _loadingCid = null);
+      if (opened == null) return;
 
-      // Проверить нужен ли пароль
-      String? password;
-      if (quickCheck.error == 'password_required') {
-        logger.info('Password required — showing dialog');
-        password = await _showPasswordFlow(binary);
-        if (password == null) return;
-      } else {
-        logger.info('No password needed — opening ceremony');
-      }
-
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => CeremonyScreen(
-              binary: binary,
-              theme: widget.theme,
-              cid: msg.cid,
-              password: password,
-            ),
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CeremonyScreen(
+            message: opened,
+            theme: widget.theme,
+            cid: msg.cid,
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       SoundService().stopModemLoop();
-      logger.error('Download error: $e');
+      logger.error('Open error: $e');
+      if (!mounted) return;
       setState(() => _loadingCid = null);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'error: $e',
-              style: GoogleFonts.vt323(fontSize: 16),
-            ),
-            backgroundColor: Colors.red.withValues(alpha: 0.3),
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
+      _showError('error: $e');
     }
   }
 
-  /// Флоу ввода пароля с обработкой неверного пароля
-  Future<String?> _showPasswordFlow(Uint8List binary) async {
-    String? password = await _showPasswordDialog();
+  /// Расшифровать конверт. Для сообщения с паролем спрашивает пароль и даёт
+  /// повторить при ошибке. null — пользователь отказался либо сообщение
+  /// прочесть нельзя (причина уже показана).
+  Future<OpenedMessage?> _openEnvelope(Uint8List blob) async {
+    String? password;
 
-    while (password != null && password.isNotEmpty) {
-      logger.info('Checking password: ${password.length} chars');
-
-      final result = SpoonCodec.decode(binary, password: password);
-      logger.info('Password check: success=${result.success} error=${result.error}');
-
-      if (result.success) {
-        logger.info('Password correct!');
-        return password;
+    try {
+      if (MessageEnvelope.needsPassword(blob)) {
+        logger.info('Password required');
+        password = await _showPasswordDialog();
+        if (password == null || password.isEmpty) return null;
       }
+    } on EnvelopeException {
+      _showError('message unreadable: unknown format');
+      return null;
+    }
 
-      if (result.error == 'wrong_password') {
-        logger.info('Wrong password — showing error dialog');
-        final action = await _showWrongPasswordDialog();
-        if (action == 'try_again') {
-          password = await _showPasswordDialog();
-        } else {
-          return null;
+    while (true) {
+      if (!mounted) return null;
+      setState(() => _loadingLabel = 'decrypting...');
+
+      try {
+        return await MessageEnvelope.open(
+          blob,
+          boardKey: widget.circle.key,
+          password: password,
+        );
+      } on EnvelopeException catch (e) {
+        logger.info('Open failed: ${e.error.name}');
+        switch (e.error) {
+          case EnvelopeError.wrongPassword:
+            if (await _showWrongPasswordDialog() != 'try_again') return null;
+            password = await _showPasswordDialog();
+            if (password == null || password.isEmpty) return null;
+          case EnvelopeError.expired:
+            _showError('ttl expired');
+            return null;
+          default:
+            _showError('message unreadable: wrong board key or corrupted data');
+            return null;
         }
-      } else {
-        // TTL или другая ошибка
-        return null;
       }
     }
-    return null;
   }
 
   Future<String?> _showPasswordDialog() async {

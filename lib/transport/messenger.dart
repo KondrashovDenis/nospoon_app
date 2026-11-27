@@ -1,162 +1,99 @@
-// Высокоуровневый интерфейс Spoon Messenger
-// Объединяет codec + IPFS + relay
+/// Высокоуровневый интерфейс: кодек + конверт + relay.
+library;
+
+import 'dart:typed_data';
 
 import '../core/codec.dart';
-import 'ipfs_client.dart';
-import 'relay_client.dart';
+import '../core/envelope.dart';
 import 'config.dart';
+import 'relay_client.dart';
 
 class MessengerError implements Exception {
   final String message;
   MessengerError(this.message);
+
   @override
-  String toString() => 'MessengerError: $message';
+  String toString() => message;
 }
 
 class SendResult {
-  final bool success;
   final String cid;
   final DateTime expiresAt;
   final int sizeBytes;
-  final String circle;
 
   SendResult({
-    required this.success,
     required this.cid,
     required this.expiresAt,
     required this.sizeBytes,
-    required this.circle,
-  });
-}
-
-class ReceivedMessage {
-  final String cid;
-  final String? text;
-  final String? bfCode;
-  final bool success;
-  final String? error;
-  final int publishedAt;
-  final int? expiresAt;
-
-  ReceivedMessage({
-    required this.cid,
-    this.text,
-    this.bfCode,
-    required this.success,
-    this.error,
-    required this.publishedAt,
-    this.expiresAt,
   });
 }
 
 class SpoonMessenger {
-  final IPFSClient ipfs;
   final RelayClient relay;
 
-  SpoonMessenger({required this.ipfs, required this.relay});
+  SpoonMessenger({required this.relay});
 
-  /// Фабричный метод — создать из конфига
-  static Future<SpoonMessenger> create() async {
-    final jwt = await TransportConfig.getPinataJwt();
-    if (jwt == null) throw MessengerError('Pinata JWT не настроен');
-
-    final relayUrl = await TransportConfig.getRelayUrl();
-
+  factory SpoonMessenger.create() {
     return SpoonMessenger(
-      ipfs: IPFSClient(jwt: jwt),
-      relay: RelayClient(relayUrl: relayUrl),
+      relay: RelayClient(relayUrl: TransportConfig.relayUrl),
     );
   }
 
-  /// Отправить сообщение в круг
+  /// Закодировать, зашифровать и опубликовать сообщение на доске.
   Future<SendResult> send(
     String text,
-    String circleKey, {
+    String boardKey, {
     int ttlSeconds = 86400,
     String? password,
   }) async {
     try {
-      // Шаг 1: кодировать
+      final createdAt = DateTime.now();
       final encoded = SpoonCodec.encode(
         text,
+        createdAt: createdAt,
+        ttlSeconds: ttlSeconds,
+      );
+      final envelope = await MessageEnvelope.seal(
+        spoonBin: encoded.binary,
+        boardKey: boardKey,
+        createdAt: createdAt,
         ttlSeconds: ttlSeconds,
         password: password,
       );
 
-      // Шаг 2: загрузить в IPFS
-      final cid = await ipfs.upload(
-        encoded.binary,
-        expiresAt: encoded.expiresAt.millisecondsSinceEpoch ~/ 1000,
-      );
-
-      // Шаг 3: опубликовать CID в relay
-      await relay.publish(
-        circleKey,
-        cid,
-        // expiresAt убран
+      final entry = await relay.publish(
+        await MessageEnvelope.boardId(boardKey),
+        envelope,
+        ttlSeconds: ttlSeconds,
       );
 
       return SendResult(
-        success: true,
-        cid: cid,
-        expiresAt: encoded.expiresAt,
-        sizeBytes: encoded.sizeBytes,
-        circle: circleKey,
+        cid: entry.cid,
+        expiresAt: DateTime.fromMillisecondsSinceEpoch(entry.expiresAt),
+        sizeBytes: envelope.length,
       );
-
-    } catch (e) {
-      throw MessengerError('Ошибка отправки: $e');
+    } on RelayError catch (e) {
+      throw MessengerError(e.message);
     }
   }
 
-  /// Получить сообщения из круга
-  Future<List<ReceivedMessage>> receive(
-    String circleKey, {
-    String? password,
-  }) async {
+  /// Лента доски: только метаданные, содержимое качается по требованию.
+  Future<List<FeedEntry>> feed(String boardKey) async {
     try {
-      final entries = await relay.getFeed(circleKey);
-      if (entries.isEmpty) return [];
-
-      final results = <ReceivedMessage>[];
-
-      for (final entry in entries) {
-        try {
-          final binary = await ipfs.download(entry.cid);
-          final decoded = SpoonCodec.decode(
-            binary,
-            password: password,
-          );
-
-          results.add(ReceivedMessage(
-            cid: entry.cid,
-            text: decoded.success ? decoded.text : null,
-            bfCode: decoded.bfCode,
-            success: decoded.success,
-            error: decoded.error,
-            publishedAt: entry.publishedAt,
-            expiresAt: entry.expiresAt,
-          ));
-
-        } catch (e) {
-          results.add(ReceivedMessage(
-            cid: entry.cid,
-            success: false,
-            error: e.toString(),
-            publishedAt: entry.publishedAt,
-            expiresAt: entry.expiresAt,
-          ));
-        }
-      }
-      return results;
-
-    } catch (e) {
-      throw MessengerError('Ошибка получения: $e');
+      return await relay.getFeed(await MessageEnvelope.boardId(boardKey));
+    } on RelayError catch (e) {
+      throw MessengerError(e.message);
     }
   }
 
-  /// Статистика сети
-  Future<NetworkStats> getStats() async {
-    return relay.getStats();
+  /// Скачать конверт сообщения.
+  Future<Uint8List> download(String boardKey, String cid) async {
+    try {
+      return await relay.download(await MessageEnvelope.boardId(boardKey), cid);
+    } on RelayError catch (e) {
+      throw MessengerError(e.message);
+    }
   }
+
+  Future<NetworkStats> getStats() => relay.getStats();
 }

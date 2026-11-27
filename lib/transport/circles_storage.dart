@@ -70,7 +70,7 @@ class CirclesStorage {
   /// Вступить в существующий круг
   static Future<Circle> join(String key, String name) async {
     final circle = Circle(
-      key: key,
+      key: key.trim(),
       name: name,
       createdAt: DateTime.now(),
     );
@@ -86,9 +86,11 @@ class CirclesStorage {
     );
   }
 
+  /// Ключ доски — единственный секрет: из него выводятся и адрес на relay,
+  /// и ключ шифрования. 24 символа из 36 ≈ 124 бита.
   static String _generateKey() {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     final random = Random.secure();
-    return List.generate(16, (_) => chars[random.nextInt(chars.length)]).join();
+    return List.generate(24, (_) => chars[random.nextInt(chars.length)]).join();
   }
 }

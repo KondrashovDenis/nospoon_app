@@ -40,7 +40,8 @@ class LoggerService {
     _logs.add(entry);
     if (_logs.length > maxLogs) _logs.removeAt(0);
     logsNotifier.value = List.from(_logs);
-    debugPrint(entry.formatted);
+    // В релизной сборке в системный лог ничего не пишем
+    if (kDebugMode) debugPrint(entry.formatted);
   }
 
   void info(String message) => log(message, level: 'INFO');

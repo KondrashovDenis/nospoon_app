@@ -1,54 +1,42 @@
-/// TTL механика
-/// Порт Python core/ttl.py на Dart
+/// TTL-обёртка на Brainfuck.
+///
+/// Программа читает один байт stdin (токен времени) и выполняет тело,
+/// только если он совпал с зашитым в неё значением.
+///
+/// Это церемониальный слой: реальный срок жизни сообщения держат
+/// зашифрованный заголовок конверта (envelope.dart) и relay, который
+/// по истечении забывает запись и снимает файл с пина.
+library;
 
-const int ttlPrecision = 3600; // 1 час вместо 60 секунд
-
-int getTimeToken({DateTime? timestamp, int precision = ttlPrecision}) {
-  final t = timestamp ?? DateTime.now();
-  return t.millisecondsSinceEpoch ~/ 1000 ~/ precision;
+/// Байт-токен для сообщения, созданного в [createdAt] со сроком [ttlSeconds].
+/// Считается детерминированно из заголовка конверта — угадывать нечего.
+int timeToken(DateTime createdAt, int ttlSeconds) {
+  final seconds = createdAt.millisecondsSinceEpoch ~/ 1000;
+  return (seconds ~/ ttlSeconds) % 256;
 }
 
-/// Обернуть BF программу в TTL обёртку
-(String, DateTime) wrapSimple(String bfCode, {int ttlSeconds = 3600}) {
-  final now = DateTime.now();
-  final expiresAt = now.add(Duration(seconds: ttlSeconds));
-  final currentToken = getTimeToken(timestamp: now, precision: ttlSeconds);
-  final tokenVal = currentToken % 256;
+/// Токен в виде строки для stdin интерпретатора.
+String stdinToken(DateTime createdAt, int ttlSeconds) =>
+    String.fromCharCode(timeToken(createdAt, ttlSeconds));
 
-  final ttlWrapper = StringBuffer();
-  ttlWrapper.write('+' * tokenVal);  // cell0 = expected token
-  ttlWrapper.write('>,' );           // cell1 = input token
-  ttlWrapper.write('<[->-<]>');      // cell1 -= cell0
-  ttlWrapper.write('>+');            // cell2 = 1
-  ttlWrapper.write('<[>-<[-]]>');    // если cell1 != 0: cell2=0
-  ttlWrapper.write('[');             // если совпало
-  ttlWrapper.write('[-]>');         // обнулить cell2, перейти к рабочей области
-  ttlWrapper.write(bfCode);         // выполнить оригинальный код
-  ttlWrapper.write(']');
+/// Обернуть BF-программу в проверку токена.
+String wrapWithTtl(
+  String bfCode, {
+  required DateTime createdAt,
+  required int ttlSeconds,
+}) {
+  final token = timeToken(createdAt, ttlSeconds);
 
-  return (ttlWrapper.toString(), expiresAt);
-}
+  final wrapper = StringBuffer();
+  wrapper.write('+' * token);        // cell0 = ожидаемый токен
+  wrapper.write('>,');               // cell1 = токен из stdin
+  wrapper.write('<[->-<]>');         // cell1 -= cell0
+  wrapper.write('>+');               // cell2 = 1
+  wrapper.write('<[>-<[-]]>');       // если cell1 != 0: cell2 = 0
+  wrapper.write('[');                // если совпало
+  wrapper.write('[-]>');             // обнулить cell2, перейти в рабочую область
+  wrapper.write(bfCode);             // выполнить тело
+  wrapper.write(']');
 
-/// Получить токен для передачи в stdin
-/// Пробуем текущий и предыдущий период — защита от граничных случаев
-String getStdinToken({DateTime? timestamp}) {
-  final token = getTimeToken(timestamp: timestamp);
-  return String.fromCharCode(token % 256);
-}
-
-/// Получить все возможные токены для декодирования
-/// Проверяем ±2 периода на случай расхождения часов
-List<String> getAllValidTokens({DateTime? timestamp, int precision = ttlPrecision}) {
-  final t = timestamp ?? DateTime.now();
-  final current = getTimeToken(timestamp: t, precision: precision);
-
-  final tokens = <String>[];
-  for (int delta = -2; delta <= 2; delta++) {
-    final token = ((current + delta) % 256 + 256) % 256;
-    final char = String.fromCharCode(token);
-    if (!tokens.contains(char)) {
-      tokens.add(char);
-    }
-  }
-  return tokens;
+  return wrapper.toString();
 }

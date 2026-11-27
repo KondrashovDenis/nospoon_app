@@ -1,5 +1,5 @@
 name: nospoon_app
-description: "A new Flutter project."
+description: "Anonymous messenger with esoteric encoding: Brainfuck, Spoon, IPFS."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.2.0+1
+version: 2.3.0+2
 
 environment:
   sdk: ^3.6.2
@@ -35,7 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   http: ^1.2.0
-  flutter_secure_storage: ^9.0.0
+  cryptography_plus: ^2.7.0
   shared_preferences: ^2.2.0
   google_fonts: ^6.1.0
   qr_flutter: ^4.1.0
@@ -43,7 +43,6 @@ dependencies:
   flutter_soloud: ^2.0.0
   flutter_local_notifications: ^18.0.0
   workmanager: ^0.6.0
-  permission_handler: ^11.3.0
 
 dev_dependencies:
   flutter_test:

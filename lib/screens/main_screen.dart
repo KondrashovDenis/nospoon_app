@@ -59,8 +59,7 @@ class _MainScreenState extends State<MainScreen> {
   Future<void> _loadStats() async {
     setState(() { _statsLoading = true; _statsError = null; });
     try {
-      final messenger = await SpoonMessenger.create();
-      final stats = await messenger.getStats();
+      final stats = await SpoonMessenger.create().getStats();
       if (mounted) setState(() { _stats = stats; _statsLoading = false; });
     } catch (e) {
       if (mounted) setState(() { _statsError = 'no live data'; _statsLoading = false; });
@@ -157,7 +156,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
           TextButton(
             onPressed: () async {
-              if (keyController.text.isNotEmpty && nameController.text.isNotEmpty) {
+              if (keyController.text.trim().isNotEmpty && nameController.text.isNotEmpty) {
                 await CirclesStorage.join(keyController.text, nameController.text);
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
@@ -357,8 +356,10 @@ class _MainScreenState extends State<MainScreen> {
               style: GoogleFonts.vt323(fontSize: 22, color: colors.primary),
               glowColor: colors.primary,
             ),
+            // Ключ доски — секрет шифрования: целиком показывается только
+            // на экране QR, здесь — первые символы для различения досок.
             subtitle: Text(
-              'key: ${circle.key}',
+              'key: ${circle.key.length > 4 ? circle.key.substring(0, 4) : circle.key}…',
               style: GoogleFonts.vt323(fontSize: 16, color: colors.textDim),
             ),
             trailing: Icon(Icons.chevron_right, color: colors.primary),

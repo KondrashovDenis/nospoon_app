@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:typed_data';
 import 'dart:async';
 import '../theme/app_theme.dart';
 import '../theme/crt_effects.dart';
 import '../core/codec.dart';
+import '../core/envelope.dart';
 import '../services/sound_service.dart';
 
 enum CeremonyStage { loading, bits, brainfuck, result, error }
 
+/// Церемония декодирования уже расшифрованного сообщения:
+/// биты Spoon → Brainfuck → текст.
 class CeremonyScreen extends StatefulWidget {
-  final Uint8List binary;
+  final OpenedMessage message;
   final SpoonTheme theme;
   final String? cid;
-  final String? password;
 
   const CeremonyScreen({
     super.key,
-    required this.binary,
+    required this.message,
     required this.theme,
     this.cid,
-    this.password,
   });
 
   @override
@@ -35,6 +35,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
   String _displayText = '';
   String _errorMessage = '';
   String _bfCode = '';
+  DecodeResult? _decoded;
 
   late AnimationController _animController;
   Timer? _typeTimer;
@@ -68,7 +69,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
   void _showBits() {
     setState(() => _stage = CeremonyStage.bits);
 
-    final fakeBits = widget.binary
+    final fakeBits = widget.message.spoonBin
         .map((b) => b.toRadixString(2).padLeft(8, '0'))
         .join();
     final displayBits = fakeBits.length > 512
@@ -98,15 +99,13 @@ class _CeremonyScreenState extends State<CeremonyScreen>
   }
 
   void _showBrainfuck() {
-    try {
-      final decoded = SpoonCodec.decode(
-        widget.binary,
-        password: widget.password,
-      );
-      _bfCode = decoded.bfCode;
-    } catch (e) {
-      _bfCode = '+++[>++<-]>.';
-    }
+    final decoded = SpoonCodec.decode(
+      widget.message.spoonBin,
+      createdAt: widget.message.createdAt,
+      ttlSeconds: widget.message.ttlSeconds,
+    );
+    _decoded = decoded;
+    _bfCode = decoded.bfCode;
 
     final displayBf = _bfCode.length > 2000
         ? _bfCode.substring(0, 2000)
@@ -157,19 +156,13 @@ class _CeremonyScreenState extends State<CeremonyScreen>
   }
 
   void _decodeAndReveal() {
-    final result = SpoonCodec.decode(
-      widget.binary,
-      password: widget.password,
-    );
+    final result = _decoded;
 
-    if (result.success && result.text.isNotEmpty) {
+    if (result != null && result.success && result.text.isNotEmpty) {
       _revealText(result.text);
-    } else if (result.error == 'password_required' ||
-               (!result.success && widget.password != null)) {
-      _revealText('Enter password to see this message');
     } else {
       setState(() {
-        _errorMessage = 'TTL EXPIRED';
+        _errorMessage = 'DECODE FAILED';
         _stage = CeremonyStage.error;
       });
     }
@@ -270,7 +263,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
           ),
           const SizedBox(height: 4),
           Text(
-            '${widget.binary.length} bytes',
+            '${widget.message.spoonBin.length} bytes',
             style: GoogleFonts.vt323(color: colors.textDim, fontSize: 16),
           ),
           const SizedBox(height: 12),
@@ -410,7 +403,7 @@ class _CeremonyScreenState extends State<CeremonyScreen>
           ),
           const SizedBox(height: 8),
           Text(
-            'ttl expired or wrong key',
+            'the program did not produce a message',
             style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
           ),
           const SizedBox(height: 32),

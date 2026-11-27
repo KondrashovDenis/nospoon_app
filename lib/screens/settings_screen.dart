@@ -9,6 +9,7 @@ import '../theme/crt_effects.dart';
 import '../screens/logs_screen.dart';
 import '../services/sound_service.dart';
 import '../services/notification_service.dart';
+import '../version.dart';
 
 class SettingsScreen extends StatefulWidget {
   final SpoonTheme theme;
@@ -206,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'no spoon messenger v2.0.0',
+              'no spoon messenger v$appVersion',
               style: GoogleFonts.vt323(color: colors.textDim, fontSize: 18),
             ),
             const SizedBox(height: 16),

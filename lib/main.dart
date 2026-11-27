@@ -60,7 +60,7 @@ class _SpoonAppState extends State<SpoonApp> {
     }
 
     return MaterialApp(
-      title: 'Spoon Messenger',
+      title: 'No Spoon',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.getTheme(_theme),
       home: _showOnboarding

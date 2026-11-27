@@ -52,7 +52,7 @@ Versions before 2.3.0 use the old protocol and no longer work.
 - **Codec:** Brainfuck compiler + Spoon prefix code
 - **Crypto:** XChaCha20-Poly1305, Argon2id, HKDF-SHA256 (`cryptography_plus`)
 - **Relay:** Cloudflare Workers + KV ([source](https://github.com/KondrashovDenis/nospoon/tree/main/cloudflare))
-- **Storage:** IPFS via Pinata, behind the relay
+- **Storage:** IPFS via Pinata, behind the relay; if IPFS is unavailable the relay keeps the message itself until it expires
 - **Sound:** flutter_soloud (synthesized, no audio files)
 - **Notifications:** flutter_local_notifications + workmanager (Android)
 

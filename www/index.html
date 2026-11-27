@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>no spoon messenger</title>
+<link rel="icon" type="image/png" href="logo_ooo_trsp.png">
 <meta name="description" content="there is no server. no identity. no trace. only the message.">
 <meta property="og:title" content="no spoon messenger">
 <meta property="og:description" content="there is no server. no identity. no trace. only the message.">
@@ -161,12 +162,14 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
     <h2 data-en="[ DOWNLOAD ]" data-ru="[ СКАЧАТЬ ]">[ DOWNLOAD ]</h2>
     <p data-en="APK release is coming soon. Follow the repo to get notified when it drops."
        data-ru="APK релиз скоро выйдет. Следи за репозиторием — уведомим когда выйдет."></p>
-    <div class="mv">v2.1.1-dev · android · flutter</div>
+    <div class="mv">v2.3.0 · android · flutter</div>
     <div class="mlinks">
-      <a class="ml" href="https://github.com/KondrashovDenis/nospoon_app" target="_blank" rel="noopener"
-         data-en="[ WATCH REPO → GITHUB ]" data-ru="[ СЛЕДИТЬ → GITHUB ]">[ WATCH REPO → GITHUB ]</a>
-      <a class="ml" href="https://github.com/KondrashovDenis/nospoon" target="_blank" rel="noopener"
-         data-en="[ TRY PYTHON CLI ]" data-ru="[ PYTHON CLI → ПОПРОБОВАТЬ ]">[ TRY PYTHON CLI ]</a>
+      <a class="ml" href="https://github.com/KondrashovDenis/nospoon_app/releases/download/v2.3.0/app-release.apk" target="_blank" rel="noopener" onclick="td()"
+         data-en="[ DOWNLOAD APK → v2.3.0 ]" data-ru="[ СКАЧАТЬ APK → v2.3.0 ]">[ DOWNLOAD APK → v2.3.0 ]</a>
+      <a class="ml" href="https://github.com/KondrashovDenis/nospoon_app/releases/download/v2.3.0/nospoon-windows-v2.3.0.zip" target="_blank" rel="noopener" onclick="td()"
+         data-en="[ DOWNLOAD WINDOWS → v2.3.0 ]" data-ru="[ СКАЧАТЬ WINDOWS → v2.3.0 ]">[ DOWNLOAD WINDOWS → v2.3.0 ]</a>
+      <a class="ml" href="https://github.com/KondrashovDenis/nospoon" target="_blank" rel="noopener" onclick="td()"
+         data-en="[ VIEW PROTOCOL → GITHUB ]" data-ru="[ ПРОТОКОЛ → GITHUB ]">[ VIEW PROTOCOL → GITHUB ]</a>
       <a class="ml mg" data-en="[ GOOGLE PLAY — coming soon ]" data-ru="[ GOOGLE PLAY — скоро ]">[ GOOGLE PLAY — coming soon ]</a>
       <a class="ml mg" data-en="[ TESTFLIGHT — coming soon ]" data-ru="[ TESTFLIGHT — скоро ]">[ TESTFLIGHT — coming soon ]</a>
     </div>
@@ -176,7 +179,7 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
 <!-- NAV -->
 <nav>
   <div class="ni">
-    <div class="logo"><img src="logo_ooo.jpg" alt="no spoon logo" style="height:28px;width:28px;object-fit:contain;vertical-align:middle;margin-right:6px;border-radius:4px;"> <em>no</em>spoon</div>
+    <div class="logo"><img src="logo_ooo_blk.jpg" alt="no spoon logo" style="height:28px;width:28px;object-fit:contain;vertical-align:middle;margin-right:6px;border-radius:4px;"> <em>no</em>spoon</div>
     <div class="nr">
       <div class="nl">
         <a href="#how"      data-en="how"     data-ru="как">how</a>
@@ -214,7 +217,7 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
       <a href="#demo" class="btn" data-en="[ TRY DEMO ]" data-ru="[ ДЕМО ]">[ TRY DEMO ]</a>
       <a href="https://github.com/KondrashovDenis/nospoon_app" class="btn" target="_blank" rel="noopener">[ GITHUB ]</a>
     </div>
-    <div class="vt">v2.1.1 · flutter · ipfs · cloudflare workers<span class="cur"></span></div>
+    <div class="vt">v2.3.0 · flutter · ipfs · cloudflare workers<span class="cur"></span></div>
   </div>
 </section>
 
@@ -236,8 +239,8 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
     <div class="chain">
       <div class="ci"><div class="cn">01</div><div class="cc">
         <h3 data-en="write a message" data-ru="написать сообщение">write a message</h3>
-        <p data-en="up to 350 characters. pick a board, set TTL (1h / 6h / 24h / 7d), optionally add a password. everything happens locally — no server involved."
-           data-ru="до 350 символов. выбери доску, TTL (1ч / 6ч / 24ч / 7д), опционально пароль. всё локально — сервер не участвует.">up to 350 characters. pick a board, set TTL (1h / 6h / 24h / 7d), optionally add a password. everything happens locally — no server involved.</p>
+        <p data-en="up to 350 characters. pick a board, set TTL (1h / 6h / 24h / 7d), optionally add a password. encoding and encryption happen on your device."
+           data-ru="до 350 символов. выбери доску, TTL (1ч / 6ч / 24ч / 7д), опционально пароль. кодирование и шифрование — на твоём устройстве.">up to 350 characters. pick a board, set TTL (1h / 6h / 24h / 7d), optionally add a password. encoding and encryption happen on your device.</p>
       </div></div>
       <div class="ci"><div class="cn">02</div><div class="cc">
         <h3 data-en="compiled to an executable" data-ru="компилируется в исполняемый файл">compiled to an executable</h3>
@@ -245,9 +248,9 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
            data-ru="текст компилируется в Brainfuck, затем кодируется в Spoon. результат — файл .bin: самодостаточная исполняемая программа.">your text becomes a <code>Brainfuck</code> program, binary-encoded into <code>Spoon</code>. result: a <code>.bin</code> — a self-contained executable.</p>
       </div></div>
       <div class="ci"><div class="cn">03</div><div class="cc">
-        <h3 data-en="uploaded to ipfs" data-ru="загружается в ipfs">uploaded to ipfs</h3>
-        <p data-en="the .bin is pinned to IPFS via Pinata. you get a CID hash. nobody controls it. no server stores your text."
-           data-ru="файл .bin закрепляется в IPFS через Pinata. ты получаешь CID-хэш. никто им не управляет. текст нигде не хранится.">the <code>.bin</code> is pinned to IPFS via Pinata. you get a CID hash. nobody controls it. no server stores your text.</p>
+        <h3 data-en="encrypted, then pinned to ipfs" data-ru="шифруется и уходит в ipfs">encrypted, then pinned to ipfs</h3>
+        <p data-en="the .bin is sealed with a key derived from the board key, then the relay pins the ciphertext to IPFS. without the board key it is noise — for the relay too."
+           data-ru="файл .bin шифруется ключом, выведенным из ключа доски, после чего relay закрепляет шифротекст в IPFS. без ключа доски это шум — в том числе для relay.">the <code>.bin</code> is sealed with a key derived from the board key, then the relay pins the ciphertext to IPFS. without the board key it is noise — for the relay too.</p>
       </div></div>
       <div class="ci"><div class="cn">04</div><div class="cc">
         <h3 data-en="the ceremony" data-ru="церемония">the ceremony</h3>
@@ -256,8 +259,8 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
       </div></div>
       <div class="ci"><div class="cn">05</div><div class="cc">
         <h3 data-en="self-destructs" data-ru="самоуничтожается">self-destructs</h3>
-        <p data-en="TTL is baked into the program via system time. after the window closes the program stops producing output. the file exists — the message is gone."
-           data-ru="TTL зашит в программу через системное время. после истечения окна программа перестаёт выводить результат. файл есть — сообщения нет.">TTL baked into the program via system time. after the window closes, program stops producing output. file exists — message is gone.</p>
+        <p data-en="the expiry is sealed inside the message. when it passes, the app refuses to open it, the relay forgets the entry and the file is unpinned from IPFS."
+           data-ru="срок жизни запечатан внутри сообщения. когда он истекает, приложение отказывается его открывать, relay забывает запись, а файл снимается с пина в IPFS.">the expiry is sealed inside the message. when it passes, the app refuses to open it, the relay forgets the entry and the file is unpinned from IPFS.</p>
       </div></div>
     </div>
   </div>
@@ -273,23 +276,23 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
     <div class="fgrid">
       <div class="feat"><div class="fic">[ _ ]</div>
         <h3 data-en="no accounts" data-ru="нет аккаунтов">no accounts</h3>
-        <p data-en="no registration, no email, no phone. boards are 16-char random keys you share yourself."
-           data-ru="никакой регистрации, почты, телефона. доски — 16-символьные ключи, которые ты передаёшь сам.">no registration, no email, no phone. boards are 16-char random keys you share yourself.</p>
+        <p data-en="no registration, no email, no phone. boards are random 24-char keys you share yourself."
+           data-ru="никакой регистрации, почты, телефона. доски — случайные 24-символьные ключи, которые ты передаёшь сам.">no registration, no email, no phone. boards are random 24-char keys you share yourself.</p>
       </div>
       <div class="feat"><div class="fic">/dev/null</div>
-        <h3 data-en="no server" data-ru="нет сервера">no server</h3>
-        <p data-en="encode/decode on device only. the relay passes CID hashes — never message content."
-           data-ru="кодирование/декодирование только на устройстве. relay передаёт CID-хэши — не содержимое.">encode/decode on device only. the relay passes CID hashes — never message content.</p>
+        <h3 data-en="blind relay" data-ru="слепой relay">blind relay</h3>
+        <p data-en="end-to-end encrypted with XChaCha20-Poly1305. the relay sees a hash of the board key and ciphertext — never the key, never the text."
+           data-ru="сквозное шифрование XChaCha20-Poly1305. relay видит хеш ключа доски и шифротекст — ни ключа, ни текста.">end-to-end encrypted with XChaCha20-Poly1305. the relay sees a hash of the board key and ciphertext — never the key, never the text.</p>
       </div>
       <div class="feat"><div class="fic">⧗ TTL</div>
         <h3 data-en="self-destruct" data-ru="самоуничтожение">self-destruct</h3>
-        <p data-en="expiry embedded in the Brainfuck program. 1h / 6h / 24h / 7d. no deletion needed."
-           data-ru="срок зашит в BF-программу. 1ч / 6ч / 24ч / 7д. никакого удаления.">expiry embedded in the Brainfuck program. 1h / 6h / 24h / 7d. no deletion needed.</p>
+        <p data-en="1h / 6h / 24h / 7d. the expiry is authenticated inside the message; the relay deletes the entry and unpins the file."
+           data-ru="1ч / 6ч / 24ч / 7д. срок заверен внутри сообщения; relay удаляет запись и снимает файл с пина.">1h / 6h / 24h / 7d. the expiry is authenticated inside the message; the relay deletes the entry and unpins the file.</p>
       </div>
-      <div class="feat"><div class="fic">hash(∗)</div>
+      <div class="feat"><div class="fic">argon2(∗)</div>
         <h3 data-en="password layer" data-ru="защита паролем">password layer</h3>
-        <p data-en="hash baked into the binary. no password = no message. relay never sees content."
-           data-ru="хэш зашит в бинарник. нет пароля — нет сообщения. relay не видит содержимого.">hash baked into the binary. no password = no message. relay never sees content.</p>
+        <p data-en="a second lock: the password is stretched with Argon2id and mixed into the key. wrong password = no decryption."
+           data-ru="второй замок: пароль растягивается через Argon2id и подмешивается в ключ. неверный пароль — нет расшифровки.">a second lock: the password is stretched with Argon2id and mixed into the key. wrong password = no decryption.</p>
       </div>
       <div class="feat"><div class="fic">+→[.-]</div>
         <h3 data-en="esolang aesthetic" data-ru="эзолэнг эстетика">esolang aesthetic</h3>
@@ -401,9 +404,9 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
         <span class="dtag">GITHUB · MIT</span>
       </a>
       <a class="dc3" href="https://github.com/KondrashovDenis/nospoon" target="_blank" rel="noopener">
-        <h3 data-en="python cli" data-ru="python cli">python cli</h3>
-        <p data-en="core codec. test the full chain: text → .bin → decode."
-           data-ru="ядро codec. полная цепочка: текст → .bin → декодирование.">core codec. test the full chain: text → .bin → decode.</p>
+        <h3 data-en="protocol spec" data-ru="протокол">protocol spec</h3>
+        <p data-en="reference implementation. python source of the codec."
+           data-ru="референс. исходники кодека на python.">reference implementation. python source of the codec.</p>
         <span class="dtag">GITHUB · PYTHON</span>
       </a>
       <div class="dc3 off">
@@ -420,9 +423,9 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
 <footer>
   <div class="fi">
     <div>
-      <div class="flo"><img src="logo_ooo.jpg" alt="no spoon logo" style="height:26px;width:26px;object-fit:contain;vertical-align:middle;margin-right:6px;border-radius:4px;"> nospoon</div>
+      <div class="flo"><img src="logo_ooo_blk.jpg" alt="no spoon logo" style="height:26px;width:26px;object-fit:contain;vertical-align:middle;margin-right:6px;border-radius:4px;"> nospoon</div>
       <div class="fm">
-        <span data-en="v2.1.1 · art project · educational experiment" data-ru="v2.1.1 · арт-проект · образовательный эксперимент">v2.1.1 · art project · educational experiment</span><br>
+        <span data-en="v2.3.0 · art project · educational experiment" data-ru="v2.3.0 · арт-проект · образовательный эксперимент">v2.3.0 · art project · educational experiment</span><br>
         <span data-en="not a tool for crime. a love letter to esoteric languages." data-ru="не инструмент для криминала. признание в любви к эзотерическим языкам.">not a tool for crime. a love letter to esoteric languages.</span>
       </div>
     </div>
@@ -432,7 +435,7 @@ footer .fi { max-width:860px; margin:0 auto; padding:0 24px; display:flex; flex-
         <a href="https://github.com/KondrashovDenis/nospoon" target="_blank" rel="noopener">github py</a>
         <a href="https://reddit.com/r/esolangs" target="_blank" rel="noopener">r/esolangs</a>
       </div>
-      <div style="font-size:14px;color:var(--dim);text-align:right;"><img src="logo_ooo.jpg" alt="" style="height:16px;width:16px;object-fit:contain;vertical-align:middle;margin-right:4px;border-radius:2px;"> there is no spoon.</div>
+      <div style="font-size:14px;color:var(--dim);text-align:right;"><img src="logo_ooo_blk.jpg" alt="" style="height:16px;width:16px;object-fit:contain;vertical-align:middle;margin-right:4px;border-radius:2px;"> there is no spoon.</div>
     </div>
   </div>
 </footer>
@@ -471,6 +474,7 @@ function sl(l){
 
 /* MODAL */
 function om(){ document.getElementById('dlm').classList.add('open'); }
+function td(){fetch('https://spoon-messenger-relay.nonospoon.workers.dev/track/download',{method:'POST'}).catch(function(){});}
 function cm(){ document.getElementById('dlm').classList.remove('open'); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape')cm(); });
 
@@ -556,8 +560,8 @@ cu(document.getElementById('sdm'),SEED.ms,1500);
     var r=await fetch(RELAY+'/stats',{signal:AbortSignal.timeout(6000)});
     if(r.ok){
       var d=await r.json();
-      if(d.boards)  document.getElementById('sdb').textContent=SEED.bd+(d.boards||0);
-      if(d.messages)document.getElementById('sdm').textContent=SEED.ms+(d.messages||0);
+      setTimeout(function(){if(d.boards)document.getElementById('sdb').textContent=SEED.bd+d.boards;if(d.downloads)document.getElementById('sdn').textContent=SEED.dl+d.downloads;},1700);
+      setTimeout(function(){document.getElementById('sdm').textContent=SEED.ms+(d.total_messages||0);},1700);
       rst.innerHTML=lang==='ru'
         ?'relay онлайн · '+RELAY.replace('https://','')
         :'relay online · '+RELAY.replace('https://','');
